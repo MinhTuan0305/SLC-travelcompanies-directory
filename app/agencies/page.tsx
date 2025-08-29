@@ -4,6 +4,19 @@ import CountySelect from "../../components/CountySelect";
 import SearchWithSuggestions from "../../components/SearchWithSuggestions";
 import Hero from "../../components/hero";
 
+type Agency = {
+  ID: number;
+  "Company name"?: string;
+  "Head Office COUNTY"?: string;
+  "SECTOR"?: string;
+  "SIZE (BASED ON STAFF NUMBER)"?: string;
+  "Geographic Specialisation"?: string;
+  "Address"?: string;
+  agency_img?: {
+    "Logo URL"?: string;
+  };
+};
+
 export default async function Agencies({
   searchParams,
 }: {
@@ -57,7 +70,7 @@ export default async function Agencies({
     .from("uk_agency")
     .select(
       `
-      *,
+      * ,
       agency_img:agency_img_id (
         "Logo URL"
       )
@@ -80,7 +93,7 @@ export default async function Agencies({
   query = query.order('"Company name"', { ascending: sort === "asc" });
   query = query.range((page - 1) * pageSize, page * pageSize - 1);
 
-  const { data: agencies, error, count } = await query;
+  const { data: agencies, error, count } = (await query) as { data: Agency[]; error: any; count: number };
 
   if (error) {
     console.error("Database error:", error);
@@ -127,7 +140,7 @@ export default async function Agencies({
   const endIndex = Math.min(startIndex + pageSize, totalCount);
 
   // 🔹 Agency Card Component with Logo
-  const AgencyCard = ({ agency }: { agency: any }) => (
+  const AgencyCard = ({ agency }: { agency: Agency }) => (
     <div className="group bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
       {/* Logo Section */}
       <div className="w-full h-40 bg-slate-50 flex items-center justify-center border-b border-slate-200">
@@ -147,7 +160,6 @@ export default async function Agencies({
 
       {/* Content Section */}
       <div className="p-6">
-        {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <Link
@@ -211,11 +223,9 @@ export default async function Agencies({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-      {/* 🔹 Hero only shows if no search/filter */}
       {!hasFilter && <Hero />}
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* 🔹 Back Button if has filter/search */}
         {hasFilter && (
           <Link
             href="/agencies"
@@ -303,7 +313,7 @@ export default async function Agencies({
           </form>
         </div>
 
-        {/* 🔹 Header with results and actions */}
+        {/* 🔹 Header with results */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">

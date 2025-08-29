@@ -1,3 +1,4 @@
+// app/dashboard/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import AgencyBarChart from "@/components/AgencyBarChart";
 import AgencyPieChart from "@/components/AgencyPieChart";
@@ -5,10 +6,9 @@ import AgencyPieChart from "@/components/AgencyPieChart";
 export const revalidate = 3600;
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  const supabase = createClient();
 
-  // 🔹 Fetch meaningful data only
-  const { data: agencies, error } = await supabase
+  const { data: agencies, error } = await (await supabase)
     .from("uk_agency")
     .select(`
       "Company name",
@@ -45,7 +45,7 @@ export default async function DashboardPage() {
     );
   }
 
-  // 🔹 Data Processing Functions
+  // Data processing
   const processData = (field: string) => {
     const counts: Record<string, number> = {};
     agencies.forEach((agency: any) => {
@@ -59,35 +59,29 @@ export default async function DashboardPage() {
       .sort((a, b) => b.count - a.count);
   };
 
-  // 🔹 Process meaningful data
   const countyData = processData("Head Office COUNTY");
   const sectorData = processData("SECTOR");
   const sizeData = processData("SIZE (BASED ON STAFF NUMBER)");
   const geoData = processData("Geographic Specialisation");
 
-  // 🔹 Additional meaningful analytics
   const totalAgencies = agencies.length;
-  
-  // Retail stores analysis
+
   const retailStoresData = agencies
-    .map(a => parseInt(a["No. of Retail Stores"]?.toString() || "0"))
-    .filter(num => !isNaN(num) && num > 0);
-  const totalRetailStores = retailStoresData.reduce((sum, num) => sum + num, 0);
+    .map((a: { [x: string]: { toString: () => any; }; }) => parseInt(a["No. of Retail Stores"]?.toString() || "0"))
+    .filter((num: number) => !isNaN(num) && num > 0);
+  const totalRetailStores = retailStoresData.reduce((sum: any, num: any) => sum + num, 0);
   const avgRetailStores = retailStoresData.length > 0 ? Math.round(totalRetailStores / retailStoresData.length) : 0;
   const agenciesWithStores = retailStoresData.length;
 
-  // International destinations analysis
-  const withIntlDestinations = agencies.filter(a => {
+  const withIntlDestinations = agencies.filter((a: { [x: string]: { toString: () => string; }; }) => {
     const dest = a["Destinations Selling (Country / Continent)"]?.toString().trim();
     return dest && dest !== "Unknown" && dest !== "N/A" && dest !== "";
   }).length;
 
-  // Top performers
   const topCounty = countyData[0];
   const topSector = sectorData[0];
   const mostCommonSize = sizeData[0];
 
-  // 🔹 Chart Component for reuse
   const ChartCard = ({ title, data, color = "blue", icon = "📊" }: {
     title: string;
     data: { name: string; count: number }[];
@@ -109,7 +103,7 @@ export default async function DashboardPage() {
           </div>
           <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
         </div>
-        
+
         {data.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             <span className="text-2xl block mb-2">📊</span>
@@ -146,7 +140,7 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
       <div className="max-w-7xl mx-auto p-6">
-        {/* 🔹 Header */}
+        {/* Header */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -158,7 +152,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           
-          {/* 🔹 Key Metrics */}
+          {/* Key Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
               <div className="text-2xl font-bold text-blue-700">{totalAgencies}</div>
@@ -179,7 +173,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 🔹 Quick Insights */}
+        {/* Quick Insights */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -213,44 +207,18 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 🔹 Distribution Charts */}
+        {/* Distribution Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* County Distribution */}
-          <ChartCard 
-            title="Agencies by County" 
-            data={countyData} 
-            color="blue"
-            icon="📍"
-          />
-          
-          {/* Sector Distribution */}
-          <ChartCard 
-            title="Agencies by Sector" 
-            data={sectorData} 
-            color="green"
-            icon="🏢"
-          />
+          <ChartCard title="Agencies by County" data={countyData} color="blue" icon="📍" />
+          <ChartCard title="Agencies by Sector" data={sectorData} color="green" icon="🏢" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Company Size Distribution */}
-          <ChartCard 
-            title="Company Size Distribution" 
-            data={sizeData} 
-            color="purple"
-            icon="👥"
-          />
-          
-          {/* Geographic Specialisation */}
-          <ChartCard 
-            title="Geographic Specialisation" 
-            data={geoData} 
-            color="orange"
-            icon="🌍"
-          />
+          <ChartCard title="Company Size Distribution" data={sizeData} color="purple" icon="👥" />
+          <ChartCard title="Geographic Specialisation" data={geoData} color="orange" icon="🌍" />
         </div>
 
-        {/* 🔹 Retail Stores Analysis */}
+        {/* Retail Stores Analysis */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -258,7 +226,6 @@ export default async function DashboardPage() {
             </div>
             <h3 className="text-xl font-semibold text-slate-800">Retail Presence Analysis</h3>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <div className="text-2xl font-bold text-slate-900">{totalRetailStores}</div>
@@ -281,7 +248,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 🔹 International Reach */}
+        {/* International Reach */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
@@ -289,7 +256,6 @@ export default async function DashboardPage() {
             </div>
             <h3 className="text-xl font-semibold text-slate-800">International Market Reach</h3>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-gradient-to-r from-teal-50 to-cyan-100 border border-teal-200">
               <div className="text-2xl font-bold text-teal-700">{withIntlDestinations}</div>
@@ -298,7 +264,6 @@ export default async function DashboardPage() {
                 {Math.round((withIntlDestinations / totalAgencies) * 100)}% of total agencies
               </div>
             </div>
-            
             <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-100 border border-blue-200">
               <div className="text-2xl font-bold text-blue-700">{totalAgencies - withIntlDestinations}</div>
               <div className="text-blue-600 text-sm font-medium">UK-focused Agencies</div>
@@ -309,7 +274,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 🔹 Main Bar Chart */}
+        {/* Main Bar Chart */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
@@ -318,27 +283,23 @@ export default async function DashboardPage() {
             <h2 className="text-xl font-semibold text-slate-800">County Distribution (Interactive Chart)</h2>
           </div>
           <AgencyBarChart 
-            data={countyData.map(item => ({ 
-              head_office_county: item.name, 
-              count: item.count 
-            }))} 
+            data={countyData.map(item => ({ head_office_county: item.name, count: item.count }))} 
           />
         </div>
 
         {/* Pie charts: Sector & Size */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <AgencyPieChart
+          <AgencyPieChart
             title="Agencies by Sector"
             data={sectorData.map(d => ({ name: d.name, value: d.count }))}
-        />
-        <AgencyPieChart
+          />
+          <AgencyPieChart
             title="Agencies by Company Size"
             data={sizeData.map(d => ({ name: d.name, value: d.count }))}
-        />
+          />
         </div>
 
-
-        {/* 🔹 Footer Stats */}
+        {/* Footer Stats */}
         <div className="mt-8 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full text-sm text-slate-600">
             <span>📅</span>
