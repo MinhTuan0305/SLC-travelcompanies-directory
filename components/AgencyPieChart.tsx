@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import type { PieLabelProps } from "recharts/types/polar/Pie";
 import {
   PieChart,
   Pie,
@@ -39,20 +40,13 @@ export default function AgencyPieChart({ data, title }: Props) {
   const total = useMemo(() => data.reduce((s, d) => s + (Number(d.value) || 0), 0), [data]);
 
   // label hiển thị trong slice — ẩn nếu slice quá nhỏ
-  const renderInnerLabel = (entry: {
-    percent?: number;
-    value: number;
-    cx: number;
-    cy: number;
-    midAngle: number;
-    innerRadius: number;
-    outerRadius: number;
-  }) => {
-    const pct = entry.percent ?? (entry.value / (total || 1));
+  const renderInnerLabel = (entry: PieLabelProps) => {
+    const value = typeof entry.value === "number" ? entry.value : 0;
+    const pct = typeof entry.percent === "number" ? entry.percent : (value / (total || 1));
     if (pct < 0.05) return null; // <5% ẩn label
     const text = view === "percent" ? `${Math.round(pct * 100)}%` : entry.value;
     // `entry` có cx, cy, midAngle, innerRadius, outerRadius (recharts passes these)
-    const { cx, cy, midAngle, innerRadius, outerRadius } = entry;
+    const { cx, cy, midAngle, innerRadius, outerRadius } = entry as Required<Pick<PieLabelProps, "cx"|"cy"|"midAngle"|"innerRadius"|"outerRadius">>;
     const RAD = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RAD);
