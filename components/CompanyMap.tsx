@@ -57,15 +57,9 @@ const getPostcodeCoordinates = async (postcode: string) => {
   return null;
 };
 
-const getGoogleMapsUrl = (address: string) => {
-  const formattedAddress = address
-    .replace(/\s+/g, '+')
-    .replace(/,/g, '%2C');
-  return `https://www.google.com/maps/search/?api=1&query=${formattedAddress}`;
-};
+// (removed unused getGoogleMapsUrl)
 
 export default function CompanyMap({ address }: CompanyMapProps) {
-  const formattedAddress = formatAddress(address);
 
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [isLoading, setIsLoading] = useState(true);

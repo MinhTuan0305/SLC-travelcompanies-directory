@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 
 // Dynamic import of MapViewClient component with loading state
 const MapViewClient = dynamic(
@@ -47,7 +48,7 @@ export default function MapViewPage() {
           
           {/* Message */}
           <p className="text-gray-600 mb-6 leading-relaxed">
-            Our map feature is currently undergoing maintenance to improve your experience. 
+            Our map feature is currently undergoing maintenance to improve your experience.
             We apologize for any inconvenience and appreciate your patience.
           </p>
           
@@ -67,12 +68,12 @@ export default function MapViewPage() {
               Check Again
             </button>
             
-            <a
+            <Link
               href="/agencies"
               className="block w-full px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-center"
             >
               Browse Agencies Instead
-            </a>
+            </Link>
           </div>
         </div>
       </div>

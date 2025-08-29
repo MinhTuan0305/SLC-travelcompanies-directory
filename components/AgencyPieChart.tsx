@@ -149,9 +149,9 @@ export default function AgencyPieChart({ data, title }: Props) {
               minAngle={2}
               labelLine={false}
               label={renderInnerLabel}
-              onMouseEnter={(_data, index: number) => setHoverIndex(index)}
+              onMouseEnter={(_data: unknown, index: number) => setHoverIndex(index)}
               onMouseLeave={() => setHoverIndex(null)}
-              onClick={(_data, index: number) =>
+              onClick={(_data: unknown, index: number) =>
                 setSelectedIndex((prev) => (prev === index ? null : index))
               }
             >
