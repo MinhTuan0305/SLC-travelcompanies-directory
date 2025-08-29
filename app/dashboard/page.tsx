@@ -48,8 +48,9 @@ export default async function DashboardPage() {
   // Data processing
   const processData = (field: string) => {
     const counts: Record<string, number> = {};
-    agencies.forEach((agency: any) => {
-      const value = agency[field]?.toString().trim() || "Unknown";
+    agencies.forEach((agency) => {
+      const raw = (agency as Record<string, unknown>)[field];
+      const value = (typeof raw === "string" ? raw : String(raw ?? "")).toString().trim() || "Unknown";
       if (value && value !== "Unknown" && value !== "N/A" && value !== "") {
         counts[value] = (counts[value] || 0) + 1;
       }
@@ -67,25 +68,24 @@ export default async function DashboardPage() {
   const totalAgencies = agencies.length;
 
   const retailStoresData = agencies
-    .map((a: { [x: string]: { toString: () => any; }; }) => parseInt(a["No. of Retail Stores"]?.toString() || "0"))
+    .map((a) => parseInt(String((a as Record<string, unknown>)["No. of Retail Stores"] ?? "0")))
     .filter((num: number) => !isNaN(num) && num > 0);
-  const totalRetailStores = retailStoresData.reduce((sum: any, num: any) => sum + num, 0);
+  const totalRetailStores = retailStoresData.reduce((sum: number, num: number) => sum + num, 0);
   const avgRetailStores = retailStoresData.length > 0 ? Math.round(totalRetailStores / retailStoresData.length) : 0;
   const agenciesWithStores = retailStoresData.length;
 
-  const withIntlDestinations = agencies.filter((a: { [x: string]: { toString: () => string; }; }) => {
-    const dest = a["Destinations Selling (Country / Continent)"]?.toString().trim();
+  const withIntlDestinations = agencies.filter((a) => {
+    const dest = String((a as Record<string, unknown>)["Destinations Selling (Country / Continent)"] ?? "").trim();
     return dest && dest !== "Unknown" && dest !== "N/A" && dest !== "";
   }).length;
 
   const topCounty = countyData[0];
   const topSector = sectorData[0];
-  const mostCommonSize = sizeData[0];
 
   const ChartCard = ({ title, data, color = "blue", icon = "📊" }: {
     title: string;
     data: { name: string; count: number }[];
-    color?: string;
+    color?: "blue" | "green" | "purple" | "orange";
     icon?: string;
   }) => {
     const colorClasses = {

@@ -38,12 +38,14 @@ export default function NewAgencyPage() {
       if (error) {
         console.error("Error fetching dropdown data:", error);
       } else if (data) {
+        type DropdownRow = { SECTOR: string | null; "SIZE (BASED ON STAFF NUMBER)": string | null };
+        const rows = data as DropdownRow[];
         const uniqueSectors = Array.from(
-          new Set(data.map((d: any) => d.SECTOR).filter(Boolean))
+          new Set(rows.map((d) => d.SECTOR || "").filter(Boolean))
         ).sort();
 
         const uniqueSizes = Array.from(
-          new Set(data.map((d: any) => d["SIZE (BASED ON STAFF NUMBER)"]).filter(Boolean))
+          new Set(rows.map((d) => d["SIZE (BASED ON STAFF NUMBER)"] || "").filter(Boolean))
         ).sort();
 
         setSectors(uniqueSectors);

@@ -63,7 +63,17 @@ export default function StoresPage() {
       );
     } else {
       // chuyển đổi tên trường cho dễ truy cập trong TS
-      const storesWithNormalizedField = (data as any[]).map((s) => ({
+      type StoreRow = {
+        store_id: number;
+        agency_id: number | null;
+        trading_name: string | null;
+        legal_name: string | null;
+        head_office_county: string | null;
+        head_office_address: string | null;
+        stores_county: string | null;
+        "Other Store Location (UK)"?: string | null;
+      };
+      const storesWithNormalizedField = (data as StoreRow[]).map((s) => ({
         ...s,
         other_store_location_uk: s["Other Store Location (UK)"] || null,
       }));
@@ -87,7 +97,7 @@ export default function StoresPage() {
   // load initial
   useEffect(() => {
     fetchStores(searchTerm, currentPage);
-  }, [currentPage]);
+  }, [currentPage, searchTerm]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +118,7 @@ export default function StoresPage() {
 
   // Tạo array số trang để hiển thị
   const getPageNumbers = () => {
-    const pages = [];
+    const pages: number[] = [];
     const maxVisiblePages = 5;
     
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));

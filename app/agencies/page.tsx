@@ -93,7 +93,7 @@ export default async function Agencies({
   query = query.order('"Company name"', { ascending: sort === "asc" });
   query = query.range((page - 1) * pageSize, page * pageSize - 1);
 
-  const { data: agencies, error, count } = (await query) as { data: Agency[]; error: any; count: number };
+  const { data: agencies, error, count } = (await query) as { data: Agency[]; error: { message?: string } | null; count: number | null };
 
   if (error) {
     console.error("Database error:", error);
@@ -125,7 +125,7 @@ export default async function Agencies({
   };
 
   const getPageNumbers = () => {
-    const pages = [];
+    const pages: number[] = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
@@ -145,6 +145,7 @@ export default async function Agencies({
       {/* Logo Section */}
       <div className="w-full h-40 bg-slate-50 flex items-center justify-center border-b border-slate-200">
         {agency.agency_img?.["Logo URL"] ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={agency.agency_img["Logo URL"]}
             alt={`${agency["Company name"]} logo`}

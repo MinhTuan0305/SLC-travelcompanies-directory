@@ -47,7 +47,7 @@ export default function CountySelect({ options, value }: Props) {
         placeholder="Type to search county..."
         classNamePrefix="react-select"
         components={{
-          DropdownIndicator: (props) => (
+          DropdownIndicator: () => (
             <div 
               className="px-2 py-2 cursor-pointer hover:text-gray-600"
               onClick={(e) => {

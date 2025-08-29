@@ -264,7 +264,7 @@ export default function SearchWithSuggestions({
       {isOpen && !isLoading && query.length >= 2 && suggestions.length === 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
           <div className="px-4 py-3 text-sm text-gray-500 text-center">
-            No companies found for "{query}"
+            No companies found for &quot;{query}&quot;
           </div>
         </div>
       )}

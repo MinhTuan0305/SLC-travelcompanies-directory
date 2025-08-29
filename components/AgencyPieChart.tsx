@@ -39,7 +39,15 @@ export default function AgencyPieChart({ data, title }: Props) {
   const total = useMemo(() => data.reduce((s, d) => s + (Number(d.value) || 0), 0), [data]);
 
   // label hiển thị trong slice — ẩn nếu slice quá nhỏ
-  const renderInnerLabel = (entry: any) => {
+  const renderInnerLabel = (entry: {
+    percent?: number;
+    value: number;
+    cx: number;
+    cy: number;
+    midAngle: number;
+    innerRadius: number;
+    outerRadius: number;
+  }) => {
     const pct = entry.percent ?? (entry.value / (total || 1));
     if (pct < 0.05) return null; // <5% ẩn label
     const text = view === "percent" ? `${Math.round(pct * 100)}%` : entry.value;
@@ -140,10 +148,10 @@ export default function AgencyPieChart({ data, title }: Props) {
               paddingAngle={2}
               minAngle={2}
               labelLine={false}
-              label={renderInnerLabel as any} // cast to any to avoid strict type issues for label function
-              onMouseEnter={(_data: any, index: number) => setHoverIndex(index)}
+              label={renderInnerLabel}
+              onMouseEnter={(_data, index: number) => setHoverIndex(index)}
               onMouseLeave={() => setHoverIndex(null)}
-              onClick={(_data: any, index: number) =>
+              onClick={(_data, index: number) =>
                 setSelectedIndex((prev) => (prev === index ? null : index))
               }
             >
