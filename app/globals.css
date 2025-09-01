@@ -66,31 +66,56 @@
   body {
     @apply bg-background text-foreground;
     background-color: #ffffff;
+    color: #000000;
   }
   
-  /* Force white background only for essential UI elements */
+  /* Force white background and ensure text visibility */
   .card, [class*="card"], [class*="Card"] {
     background-color: #ffffff;
+    color: #000000;
   }
   
-  /* Force white background for form inputs */
+  /* Force white background for form inputs with visible text */
   input, textarea, select {
     background-color: #ffffff;
+    color: #000000;
   }
   
-  /* Force white background for search containers */
+  /* Force white background for search containers with visible text */
   .search-container, .search-box, [class*="search"] {
     background-color: #ffffff;
+    color: #000000;
   }
   
-  /* Force white background for dropdown menus */
+  /* Force white background for dropdown menus with visible text */
   .dropdown-menu, [class*="dropdown"] {
     background-color: #ffffff;
+    color: #000000;
   }
   
-  /* Force white background for navigation */
+  /* Force white background for navigation with visible text */
   nav {
     background-color: #ffffff;
+    color: #000000;
+  }
+  
+  /* Ensure all text elements have visible colors */
+  h1, h2, h3, h4, h5, h6 {
+    color: #000000;
+  }
+  
+  p, span, div, label {
+    color: #000000;
+  }
+  
+  /* Ensure links are visible */
+  a {
+    color: #000000;
+  }
+  
+  /* Ensure buttons have visible text */
+  button {
+    color: #000000;
   }
 }
 
