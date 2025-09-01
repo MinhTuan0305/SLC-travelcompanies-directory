@@ -9,18 +9,10 @@ const nextConfig = {
     return config;
   },
 
-  // Experimental features
+  // Experimental features - removed problematic ones
   experimental: {
     optimizePackageImports: ['leaflet'],
-    optimizeCss: true, // Optimize CSS
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
+    // Removed optimizeCss and turbo config that cause build errors
   },
 
   // Tắt ESLint fail build trên Vercel
