@@ -65,6 +65,32 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: #ffffff;
+  }
+  
+  /* Force white background only for essential UI elements */
+  .card, [class*="card"], [class*="Card"] {
+    background-color: #ffffff;
+  }
+  
+  /* Force white background for form inputs */
+  input, textarea, select {
+    background-color: #ffffff;
+  }
+  
+  /* Force white background for search containers */
+  .search-container, .search-box, [class*="search"] {
+    background-color: #ffffff;
+  }
+  
+  /* Force white background for dropdown menus */
+  .dropdown-menu, [class*="dropdown"] {
+    background-color: #ffffff;
+  }
+  
+  /* Force white background for navigation */
+  nav {
+    background-color: #ffffff;
   }
 }
 
