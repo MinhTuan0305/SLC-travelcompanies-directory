@@ -3,25 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Prevent hydration mismatch by only showing mobile menu after mount
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
 
   const menuItems = [
     { name: "Home Page", href: "/agencies" },
@@ -30,6 +16,14 @@ export default function Navbar() {
     { name: "Store Locator", href: "/stores" },
     { name: "How to use", href: "/how-to-use" },
   ];
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b border-slate-200">
@@ -72,7 +66,7 @@ export default function Navbar() {
               aria-label="Toggle menu"
               onClick={toggleMobileMenu}
             >
-              {isMounted && isMobileMenuOpen ? (
+              {isMobileMenuOpen ? (
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -85,8 +79,8 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu - Only show after mount to prevent hydration mismatch */}
-        {isMounted && isMobileMenuOpen && (
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200 py-2 bg-white">
             <div className="flex flex-col space-y-1">
               {menuItems.map((item) => (

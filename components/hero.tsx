@@ -10,30 +10,46 @@ const images = [
 
 export default function Hero() {
   const [current, setCurrent] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Prevent hydration mismatch by only showing slider after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Chuyển ảnh mỗi 5 giây
   useEffect(() => {
+    if (!isMounted) return;
+    
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % images.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isMounted]);
 
   return (
     <div className="relative h-[600px] md:h-[800px] lg:h-screen overflow-hidden">
-      {/* Slider Container */}
-      <div
-        className="absolute inset-0 flex transition-transform duration-1000 ease-in-out"
-        style={{ transform: `translateX(-${current * 100}%)` }}
-      >
-        {images.map((img, index) => (
-          <div
-            key={index}
-            className="w-full h-full flex-shrink-0 bg-cover bg-center"
-            style={{ backgroundImage: `url('${img}')` }}
-          />
-        ))}
-      </div>
+      {/* Slider Container - Only show after mount to prevent hydration mismatch */}
+      {isMounted ? (
+        <div
+          className="absolute inset-0 flex transition-transform duration-1000 ease-in-out"
+          style={{ transform: `translateX(-${current * 100}%)` }}
+        >
+          {images.map((img, index) => (
+            <div
+              key={index}
+              className="w-full h-full flex-shrink-0 bg-cover bg-center"
+              style={{ backgroundImage: `url('${img}')` }}
+            />
+          ))}
+        </div>
+      ) : (
+        // Show first image during SSR and before hydration
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url('${images[0]}')` }}
+        />
+      )}
 
       {/* Overlay Content */}
       <div className="relative z-10 h-full flex flex-col justify-center items-center text-white px-4 bg-black bg-opacity-30">
