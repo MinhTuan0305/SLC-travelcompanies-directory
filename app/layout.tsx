@@ -3,6 +3,7 @@ import { Poppins, Nunito_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Navbar from "@/components/Navbar"; // 🔹 import Navbar
+import ClientOnly from "@/components/ClientOnly";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -40,16 +41,23 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-body antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {/* 🔹 Navbar luôn hiển thị trên mọi trang */}
-          <Navbar />
-          <main>{children}</main>
-        </ThemeProvider>
+        <ClientOnly fallback={
+          <div className="min-h-screen bg-white">
+            <Navbar />
+            <main>{children}</main>
+          </div>
+        }>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            {/* 🔹 Navbar luôn hiển thị trên mọi trang */}
+            <Navbar />
+            <main>{children}</main>
+          </ThemeProvider>
+        </ClientOnly>
       </body>
     </html>
   );
