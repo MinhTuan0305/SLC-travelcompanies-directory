@@ -329,7 +329,7 @@ export default async function Agencies({
           </div>
           <Link
             href="/agencies/new"
-            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
+            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
           >
             ➕ Add New Agency
           </Link>

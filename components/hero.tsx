@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 const images = [
   "/Hero.jpg",   // Ảnh 1
@@ -10,6 +11,14 @@ const images = [
 
 export default function Hero() {
   const [current, setCurrent] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // Preload first image and lazy load others
+  useEffect(() => {
+    const preloadFirstImage = new window.Image();
+    preloadFirstImage.src = images[0];
+    preloadFirstImage.onload = () => setImagesLoaded(true);
+  }, []);
 
   // Chuyển ảnh mỗi 5 giây
   useEffect(() => {
@@ -21,6 +30,16 @@ export default function Hero() {
 
   return (
     <div className="relative h-[600px] md:h-[800px] lg:h-screen overflow-hidden">
+      {/* Loading placeholder */}
+      {!imagesLoaded && (
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
+          <div className="text-white text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+            <p className="text-xl">Loading...</p>
+          </div>
+        </div>
+      )}
+
       {/* Slider Container */}
       <div
         className="absolute inset-0 flex transition-transform duration-1000 ease-in-out"
@@ -29,9 +48,19 @@ export default function Hero() {
         {images.map((img, index) => (
           <div
             key={index}
-            className="w-full h-full flex-shrink-0 bg-cover bg-center"
-            style={{ backgroundImage: `url('${img}')` }}
-          />
+            className="w-full h-full flex-shrink-0 relative"
+          >
+            <Image
+              src={img}
+              alt={`Hero image ${index + 1}`}
+              fill
+              className="object-cover"
+              priority={index === 0} // Only prioritize first image
+              loading={index === 0 ? "eager" : "lazy"}
+              sizes="100vw"
+              quality={85} // Reduce quality slightly for better performance
+            />
+          </div>
         ))}
       </div>
 

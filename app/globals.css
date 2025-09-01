@@ -120,3 +120,40 @@
     @apply font-title font-medium;
   }
 }
+
+@layer components {
+  /* Enhanced hover effects for all interactive elements */
+  .hover-enhanced {
+    @apply cursor-pointer transition-all duration-200;
+  }
+  
+  /* Filter select elements */
+  select.hover-enhanced {
+    @apply hover:border-slate-400 hover:shadow-sm;
+  }
+  
+  /* Buttons with enhanced hover */
+  .btn-enhanced {
+    @apply cursor-pointer transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-md;
+  }
+  
+  /* Pagination buttons */
+  .pagination-btn {
+    @apply cursor-pointer transition-all duration-200 hover:shadow-sm;
+  }
+  
+  /* Links with enhanced hover */
+  .link-enhanced {
+    @apply cursor-pointer transition-all duration-200 hover:scale-[1.01];
+  }
+  
+  /* Form elements */
+  input, textarea, select {
+    @apply cursor-pointer;
+  }
+  
+  /* All clickable elements */
+  button, a, select, [role="button"] {
+    @apply cursor-pointer;
+  }
+}
