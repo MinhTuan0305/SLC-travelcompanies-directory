@@ -36,8 +36,8 @@
     --foreground: 0 0% 98%;
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 0 0% 9%;
     --primary: 0 0% 98%;
     --primary-foreground: 0 0% 9%;
     --secondary: 0 0% 14.9%;
@@ -69,7 +69,7 @@
     color: #000000;
   }
   
-  /* Force white background and ensure text visibility */
+  /* Force white background and ensure text visibility for main content */
   .card, [class*="card"], [class*="Card"] {
     background-color: #ffffff;
     color: #000000;
@@ -99,7 +99,7 @@
     color: #000000;
   }
   
-  /* Ensure all text elements have visible colors */
+  /* Ensure main content text has visible colors */
   h1, h2, h3, h4, h5, h6 {
     color: #000000;
   }
@@ -116,6 +116,16 @@
   /* Ensure buttons have visible text */
   button {
     color: #000000;
+  }
+  
+  /* Special case: Hero section text should remain white */
+  .hero-text, [class*="hero"] h1, [class*="hero"] h2, [class*="hero"] p {
+    color: #ffffff !important;
+  }
+  
+  /* Override for hero overlay text specifically */
+  .relative.z-10 h1, .relative.z-10 p {
+    color: #ffffff !important;
   }
 }
 
