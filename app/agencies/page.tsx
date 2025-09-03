@@ -1,8 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import CountySelect from "../../components/CountySelect";
-import SearchWithSuggestions from "../../components/SearchWithSuggestions";
+import SearchBar from "../../components/SearchBar";
+import FloatingSearchBar from "../../components/FloatingSearchBar";
+import QuickJumpSelect from "../../components/QuickJumpSelect";
 import Hero from "../../components/hero";
+import ErrorBoundary from "../../components/ErrorBoundary";
 
 type Agency = {
   ID: number;
@@ -65,155 +68,160 @@ export default async function Agencies({
     new Set(geoOptions?.map((row) => row["Geographic Specialisation"]?.trim()).filter(Boolean))
   ).sort();
 
-  // 🔹 Main query with logo JOIN
+  // 🔹 Fallback to simple query to avoid field name issues
   let query = supabase
     .from("uk_agency")
-    .select(
-      `
-      * ,
-      agency_img:agency_img_id (
-        "Logo URL"
-      )
-    `,
-      { count: "exact" }
-    );
+    .select("*", { count: "exact" });
 
-  if (searchQuery) {
+  if (searchQuery && searchQuery.trim()) {
+    const cleanSearchQuery = searchQuery.trim().replace(/[%_]/g, '\\$&'); // Escape special characters
     query = query.or(
-      `"Company name".ilike.%${searchQuery}%,` +
-      `"Address".ilike.%${searchQuery}%,` +
-      `"Head Office COUNTY".ilike.%${searchQuery}%`
+      `"Company name".ilike.%${cleanSearchQuery}%,` +
+      `"Address".ilike.%${cleanSearchQuery}%,` +
+      `"Head Office COUNTY".ilike.%${cleanSearchQuery}%`
     );
   }
-  if (sizeFilter) query = query.eq('"SIZE (BASED ON STAFF NUMBER)"', sizeFilter);
-  if (countyFilter) query = query.eq('"Head Office COUNTY"', countyFilter);
-  if (sectorFilter) query = query.eq("SECTOR", sectorFilter);
-  if (geoFilter) query = query.eq('"Geographic Specialisation"', geoFilter);
+  if (sizeFilter && sizeFilter.trim()) query = query.eq('"SIZE (BASED ON STAFF NUMBER)"', sizeFilter.trim());
+  if (countyFilter && countyFilter.trim()) query = query.eq('"Head Office COUNTY"', countyFilter.trim());
+  if (sectorFilter && sectorFilter.trim()) query = query.eq("SECTOR", sectorFilter.trim());
+  if (geoFilter && geoFilter.trim()) query = query.eq('"Geographic Specialisation"', geoFilter.trim());
 
   query = query.order('"Company name"', { ascending: sort === "asc" });
-  query = query.range((page - 1) * pageSize, page * pageSize - 1);
+  
+  // Validate pagination parameters
+  const safePage = Math.max(1, Math.floor(page) || 1);
+  const safePageSize = Math.max(1, Math.min(100, Math.floor(pageSize) || 10)); // Max 100 items per page
+  query = query.range((safePage - 1) * safePageSize, safePage * safePageSize - 1);
 
-  const { data: agencies, error, count } = (await query) as { data: Agency[]; error: { message?: string } | null; count: number | null };
+  let agencies, error, count;
+  
+  try {
+    const result = await query;
+    agencies = result.data;
+    error = result.error;
+    count = result.count;
+  } catch (err) {
+    console.error("Query execution error:", err);
+    error = { message: `Query failed: ${err instanceof Error ? err.message : 'Unknown error'}` };
+    agencies = null;
+    count = null;
+  }
 
   if (error) {
     console.error("Database error:", error);
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl shadow-lg border border-red-200 text-center max-w-md">
-          <div className="text-6xl mb-4">😵</div>
-          <h2 className="text-2xl font-bold text-red-800 mb-2">Oops! Something went wrong</h2>
-          <p className="text-red-600">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const totalPages = Math.ceil((count || 0) / pageSize);
-  const totalCount = count || 0;
-  const hasFilter = searchQuery || sizeFilter || countyFilter || sectorFilter || geoFilter;
-
-  const createPageUrl = (pageNum: number) => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set("q", searchQuery);
-    if (sort !== "desc") params.set("sort", sort);
-    if (sizeFilter) params.set("size", sizeFilter);
-    if (countyFilter) params.set("county", countyFilter);
-    if (sectorFilter) params.set("sector", sectorFilter);
-    if (geoFilter) params.set("geo", geoFilter);
-    params.set("page", pageNum.toString());
-    return `?${params.toString()}`;
-  };
-
-  const getPageNumbers = () => {
-    const pages: number[] = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    if (endPage - startPage < maxVisiblePages - 1) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    console.error("Error details:", JSON.stringify(error, null, 2));
+    
+    // Try a simple fallback query
+    try {
+      console.log("Attempting fallback query...");
+      const fallbackResult = await supabase
+        .from("uk_agency")
+        .select("ID, \"Company name\", SECTOR, \"Head Office COUNTY\", Address, agency_img_id", { count: "exact" })
+        .order('"Company name"')
+        .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      if (!fallbackResult.error) {
+        console.log("Fallback query successful");
+        agencies = fallbackResult.data;
+        count = fallbackResult.count;
+        error = null;
+      } else {
+        console.error("Fallback query also failed:", fallbackResult.error);
+      }
+    } catch (fallbackErr) {
+      console.error("Fallback query execution error:", fallbackErr);
     }
-    for (let i = startPage; i <= endPage; i++) pages.push(i);
-    return pages;
-  };
-
-  const startIndex = (page - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalCount);
-
-  // 🔹 Agency Card Component with Logo
-  const AgencyCard = ({ agency }: { agency: Agency }) => (
-    <div className="group bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
-      {/* Logo Section */}
-      <div className="w-full h-40 bg-slate-50 flex items-center justify-center border-b border-slate-200">
-        {agency.agency_img?.["Logo URL"] ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={agency.agency_img["Logo URL"]}
-            alt={`${agency["Company name"]} logo`}
-            className="max-h-32 max-w-full object-contain p-2"
-          />
-        ) : (
-          <div className="text-slate-400 text-sm flex flex-col items-center">
-            <span className="text-2xl mb-1">🏢</span>
-            <span>No Logo</span>
-          </div>
-        )}
-      </div>
-
-      {/* Content Section */}
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <Link
-              href={`/agencies/${agency.ID}`}
-              className="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors duration-200 line-clamp-2 block"
-            >
-              {agency["Company name"] || "No name"}
-            </Link>
-            <div className="flex items-center gap-1 mt-2 text-sm text-slate-500">
-              <span>📍</span>
-              <span>{agency["Head Office COUNTY"] || "N/A"}</span>
+    
+    // If still error, show error page
+    if (error) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="bg-red-50 border border-red-200 p-6 text-center">
+              <h2 className="text-lg font-semibold text-red-800 mb-2">Database Error</h2>
+              <p className="text-red-600">Unable to fetch agencies. Please try again later.</p>
+              <details className="mt-4 text-left">
+                <summary className="cursor-pointer text-sm text-red-700">Error Details</summary>
+                <pre className="mt-2 text-xs text-red-600 bg-red-100 p-2 rounded overflow-auto">
+                  {JSON.stringify(error, null, 2)}
+                </pre>
+              </details>
             </div>
           </div>
-          <div className="flex-shrink-0 ml-3">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+        </div>
+      );
+    }
+  }
+
+  const hasFilter = searchQuery || sizeFilter || countyFilter || sectorFilter || geoFilter;
+  const totalCount = count || 0;
+  const totalPages = Math.ceil(totalCount / safePageSize);
+
+  // 🔹 Agency Card Component
+  const AgencyCard = ({ agency }: { agency: Agency }) => (
+    <div className="bg-white shadow-luxury border border-gray-100/50 overflow-hidden hover:shadow-luxury-hover hover:-translate-y-1 transition-all duration-300">
+      <div className="p-6">
+        {/* Logo Section */}
+        <div className="flex items-center justify-center h-20 mb-4 bg-slate-50">
+          {agency.agency_img?.["Logo URL"] ? (
+            <img
+              src={agency.agency_img["Logo URL"]}
+              alt={`${agency["Company name"]} logo`}
+              className="max-h-16 max-w-full object-contain"
+            />
+          ) : (
+            <div className="text-slate-400 text-2xl">🏢</div>
+          )}
+        </div>
+
+        {/* Company Info */}
+        <div className="text-center mb-4">
+          <h3 className="font-semibold text-luxury-navy mb-2 line-clamp-2">
+            {agency["Company name"] || "N/A"}
+          </h3>
+          <div className="flex items-center justify-center gap-2 text-sm text-luxury-navy/70">
+            <span>📍</span>
+            <span>{agency["Head Office COUNTY"] || "N/A"}</span>
           </div>
         </div>
 
         {/* Details */}
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-slate-400">🏢</span>
-            <span className="font-medium text-slate-600">Sector:</span>
-            <span className="text-slate-700">{agency["SECTOR"] || "N/A"}</span>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-start gap-2">
+            <span className="text-slate-400 mt-0.5">🏢</span>
+            <div className="flex-1">
+              <span className="font-medium text-luxury-navy/70">Sector:</span>
+              <span className="text-luxury-navy ml-1">{agency["SECTOR"] || "N/A"}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-slate-400">👥</span>
-            <span className="font-medium text-slate-600">Size:</span>
-            <span className="text-slate-700">{agency["SIZE (BASED ON STAFF NUMBER)"] || "N/A"}</span>
+          <div className="flex items-start gap-2">
+            <span className="text-slate-400 mt-0.5">👥</span>
+            <div className="flex-1">
+              <span className="font-medium text-luxury-navy/70">Size:</span>
+              <span className="text-luxury-navy ml-1">{agency["SIZE (BASED ON STAFF NUMBER)"] || "N/A"}</span>
+            </div>
           </div>
-          <div className="flex items-start gap-2 text-sm">
+          <div className="flex items-start gap-2">
             <span className="text-slate-400 mt-0.5">🌍</span>
             <div className="flex-1">
-              <span className="font-medium text-slate-600">Specialisation:</span>
-              <span className="text-slate-700 ml-1 line-clamp-2">
-                {agency["Geographic Specialisation"] || "N/A"}
-              </span>
+              <span className="font-medium text-luxury-navy/70">Specialization:</span>
+              <span className="text-luxury-navy ml-1">{agency["Geographic Specialisation"] || "N/A"}</span>
             </div>
           </div>
           <div className="flex items-start gap-2 text-sm">
             <span className="text-slate-400 mt-0.5">🏠</span>
             <div className="flex-1">
-              <span className="font-medium text-slate-600">Address:</span>
-              <span className="text-slate-700 ml-1 line-clamp-2">{agency["Address"] || "N/A"}</span>
+              <span className="font-medium text-luxury-navy/70">Address:</span>
+              <span className="text-luxury-navy ml-1 line-clamp-2">{agency["Address"] || "N/A"}</span>
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-center pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-center pt-4 border-t border-gray-100">
           <Link
             href={`/agencies/${agency.ID}`}
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="text-sm font-medium text-luxury-gold hover:text-luxury-gold-dark transition-colors"
           >
             View Details →
           </Link>
@@ -223,59 +231,66 @@ export default async function Agencies({
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-      {!hasFilter && <Hero />}
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+        {!hasFilter && <Hero />}
+        
+        {/* Floating Search Bar */}
+        <FloatingSearchBar searchQuery={searchQuery} />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {hasFilter && (
           <Link
             href="/agencies"
-            className="inline-flex items-center gap-2 mb-8 px-4 py-2.5 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl hover:bg-indigo-100 hover:border-indigo-300 transition-all duration-200 group"
+            className="inline-flex items-center gap-2 mb-8 px-4 py-2.5 text-sm font-medium text-luxury-gold bg-luxury-gold/10 border border-luxury-gold/20 hover:bg-luxury-gold/20 hover:border-luxury-gold/30 transition-all duration-200 group"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform duration-200">←</span>
             Back to All Agencies
           </Link>
         )}
 
-        {/* 🔹 Enhanced Search Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600">🔍</span>
-            </div>
-            <h2 className="text-lg font-semibold text-slate-800">Search & Filter Agencies</h2>
+        {/* 🔹 Enhanced Search Section with SearchBar Component */}
+        <div className="bg-white shadow-luxury border border-gray-100/50 p-8 mb-8">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-luxury-navy">Search & Filter Agencies</h2>
           </div>
 
-          <form className="space-y-4">
-            <div className="flex flex-col lg:flex-row gap-3">
+          <form className="space-y-6">
+            <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1 min-w-[250px]">
-                <SearchWithSuggestions defaultValue={searchQuery} />
+                <input
+                  type="text"
+                  name="q"
+                  defaultValue={searchQuery}
+                  placeholder="Search by company name, address, county..."
+                  className="w-full px-6 py-4 text-lg bg-white border border-gray-200 text-charcoal placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-luxury-gold/20 focus:border-luxury-gold transition-all duration-300 rounded-l-md"
+                />
               </div>
               <div className="flex gap-3 flex-wrap lg:flex-nowrap">
                 <select
                   name="sort"
                   defaultValue={sort}
-                  className="border border-slate-300 px-3 py-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  className="border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-luxury-gold/20 focus:border-luxury-gold transition-colors bg-white"
                 >
                   <option value="asc">A → Z</option>
                   <option value="desc">Z → A</option>
                 </select>
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors duration-200 whitespace-nowrap"
+                  className="bg-gradient-luxury hover:bg-luxury-gold-dark text-white px-6 py-3 text-sm font-medium transition-all duration-200 whitespace-nowrap shadow-luxury hover:shadow-luxury-hover transform hover:-translate-y-1"
                 >
                   Search
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <select
                 name="size"
                 defaultValue={sizeFilter}
-                className="border border-slate-300 px-3 py-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-luxury-gold/20 focus:border-luxury-gold transition-colors bg-white"
               >
-                <option value="">👥 All Sizes</option>
+                <option value="">All Sizes</option>
                 {uniqueSizes.map((size) => (
                   <option key={size} value={size}>{size}</option>
                 ))}
@@ -292,9 +307,9 @@ export default async function Agencies({
               <select
                 name="sector"
                 defaultValue={sectorFilter}
-                className="border border-slate-300 px-3 py-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-luxury-gold/20 focus:border-luxury-gold transition-colors bg-white"
               >
-                <option value="">🏢 All Sectors</option>
+                <option value="">All Sectors</option>
                 {uniqueSectors.map((sector) => (
                   <option key={sector} value={sector}>{sector}</option>
                 ))}
@@ -303,9 +318,9 @@ export default async function Agencies({
               <select
                 name="geo"
                 defaultValue={geoFilter}
-                className="border border-slate-300 px-3 py-2.5 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-luxury-gold/20 focus:border-luxury-gold transition-colors bg-white"
               >
-                <option value="">🌍 All Regions</option>
+                <option value="">All Regions</option>
                 {uniqueGeos.map((geo) => (
                   <option key={geo} value={geo}>{geo}</option>
                 ))}
@@ -314,132 +329,165 @@ export default async function Agencies({
           </form>
         </div>
 
-        {/* 🔹 Header with results */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        {/* Results Header */}
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              {hasFilter ? 'Search Results' : 'UK Travel Agencies'}
-            </h1>
-            {agencies && agencies.length > 0 && (
-              <p className="text-slate-600">
-                Showing {startIndex + 1} - {endIndex} of {totalCount} agencies
-                {hasFilter && " (filtered)"}
-              </p>
-            )}
+            <h1 className="text-3xl font-bold text-luxury-navy">UK Travel Agencies</h1>
+            <p className="text-luxury-navy/70 mt-1">
+              Showing {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, totalCount)} of {totalCount} agencies
+            </p>
           </div>
           <Link
             href="/agencies/new"
-            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 font-medium transition-colors duration-200 shadow-luxury hover:shadow-luxury-hover transform hover:-translate-y-1"
           >
-            ➕ Add New Agency
+            + Add New Agency
           </Link>
         </div>
 
-        {/* 🔹 Results */}
-        {!agencies || agencies.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-slate-200">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-2xl font-bold text-slate-800 mb-2">No agencies found</h3>
-            <p className="text-slate-600 mb-6">
-              {hasFilter
-                ? "Try adjusting your search filters or search terms."
-                : "No agencies are currently in the database."}
-            </p>
-            <Link
-              href="/agencies"
-              className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-            >
-              Clear filters and view all agencies →
-            </Link>
-          </div>
-        ) : (
+        {/* Agencies Grid */}
+        {agencies && agencies.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {agencies.map((agency) => (
               <AgencyCard key={agency.ID} agency={agency} />
             ))}
           </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-semibold text-luxury-navy mb-2">No agencies found</h3>
+            <p className="text-luxury-navy/70">Try adjusting your search criteria or filters.</p>
+          </div>
         )}
 
-        {/* 🔹 Pagination */}
-        {agencies && agencies.length > 0 && totalPages > 1 && (
-          <div className="mt-12 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="flex justify-center items-center space-x-1">
-                {page > 1 ? (
+        {/* Enhanced Pagination */}
+        {totalPages > 1 && (
+          <div className="flex flex-col items-center gap-4 mt-12">
+            {/* Pagination Info */}
+            <div className="text-sm text-luxury-navy/70">
+              Page {page} of {totalPages} • {totalCount} results
+            </div>
+            
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-1">
+              {/* First Page */}
+              {page > 2 && (
+                <>
                   <Link
-                    href={createPageUrl(page - 1)}
-                    className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                    href={`/agencies?${new URLSearchParams({
+                      ...params,
+                      page: "1",
+                    })}`}
+                    className="px-3 py-2 text-sm font-medium text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold transition-all duration-200 rounded-l-lg"
                   >
-                    ← Previous
+                    1
                   </Link>
-                ) : (
-                  <span className="px-4 py-2 text-sm font-medium text-slate-400 bg-slate-50 rounded-lg cursor-not-allowed">
-                    ← Previous
-                  </span>
-                )}
-
-                {getPageNumbers()[0] > 1 && (
-                  <>
-                    <Link
-                      href={createPageUrl(1)}
-                      className="px-3 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-                    >
-                      1
-                    </Link>
-                    {getPageNumbers()[0] > 2 && (
-                      <span className="px-2 text-slate-400">...</span>
-                    )}
-                  </>
-                )}
-
-                {getPageNumbers().map((pageNum) => (
+                  {page > 3 && (
+                    <span className="px-2 text-luxury-navy/50">...</span>
+                  )}
+                </>
+              )}
+              
+              {/* Previous Page */}
+              {page > 1 ? (
+                <Link
+                  href={`/agencies?${new URLSearchParams({
+                    ...params,
+                    page: (page - 1).toString(),
+                  })}`}
+                  className="px-3 py-2 text-sm font-medium text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold transition-all duration-200 flex items-center gap-1"
+                >
+                  <span>←</span>
+                  <span className="hidden sm:inline">Previous</span>
+                </Link>
+              ) : (
+                <span className="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed flex items-center gap-1">
+                  <span>←</span>
+                  <span className="hidden sm:inline">Previous</span>
+                </span>
+              )}
+              
+              {/* Current Page and Adjacent Pages */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (page <= 3) {
+                  pageNum = i + 1;
+                } else if (page >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = page - 2 + i;
+                }
+                
+                if (pageNum < 1 || pageNum > totalPages) return null;
+                
+                return (
                   <Link
                     key={pageNum}
-                    href={createPageUrl(pageNum)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      page === pageNum
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-slate-700 bg-slate-100 hover:bg-slate-200"
+                    href={`/agencies?${new URLSearchParams({
+                      ...params,
+                      page: pageNum.toString(),
+                    })}`}
+                    className={`px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                      pageNum === page
+                        ? "text-white bg-luxury-gold border border-luxury-gold shadow-luxury"
+                        : "text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold hover:shadow-sm"
                     }`}
                   >
                     {pageNum}
                   </Link>
-                ))}
-
-                {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
-                  <>
-                    {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && (
-                      <span className="px-2 text-slate-400">...</span>
-                    )}
-                    <Link
-                      href={createPageUrl(totalPages)}
-                      className="px-3 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-                    >
-                      {totalPages}
-                    </Link>
-                  </>
-                )}
-
-                {page < totalPages ? (
+                );
+              })}
+              
+              {/* Next Page */}
+              {page < totalPages ? (
+                <Link
+                  href={`/agencies?${new URLSearchParams({
+                    ...params,
+                    page: (page + 1).toString(),
+                  })}`}
+                  className="px-3 py-2 text-sm font-medium text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold transition-all duration-200 flex items-center gap-1"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <span>→</span>
+                </Link>
+              ) : (
+                <span className="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed flex items-center gap-1">
+                  <span className="hidden sm:inline">Next</span>
+                  <span>→</span>
+                </span>
+              )}
+              
+              {/* Last Page */}
+              {page < totalPages - 1 && (
+                <>
+                  {page < totalPages - 2 && (
+                    <span className="px-2 text-luxury-navy/50">...</span>
+                  )}
                   <Link
-                    href={createPageUrl(page + 1)}
-                    className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                    href={`/agencies?${new URLSearchParams({
+                      ...params,
+                      page: totalPages.toString(),
+                    })}`}
+                    className="px-3 py-2 text-sm font-medium text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold transition-all duration-200 rounded-r-lg"
                   >
-                    Next →
+                    {totalPages}
                   </Link>
-                ) : (
-                  <span className="px-4 py-2 text-sm font-medium text-slate-400 bg-slate-50 rounded-lg cursor-not-allowed">
-                    Next →
-                  </span>
-                )}
-              </div>
-              <div className="text-sm text-slate-500">
-                Page {page} of {totalPages} • {totalCount} total agencies
-              </div>
+                </>
+              )}
             </div>
+            
+            {/* Quick Jump */}
+            <QuickJumpSelect 
+              currentPage={page}
+              totalPages={totalPages}
+              searchParams={params}
+            />
           </div>
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

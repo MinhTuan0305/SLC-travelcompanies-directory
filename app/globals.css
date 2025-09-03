@@ -1,56 +1,59 @@
 @import "leaflet/dist/leaflet.css";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    /* Luxury Color Palette */
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 0 0% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 0 0% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 45 100% 51%; /* Champagne Gold */
+    --primary-foreground: 0 0% 8%;
+    --secondary: 220 15% 15%; /* Deep Navy */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 45 30% 90%; /* Cream */
+    --accent-foreground: 0 0% 8%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 0 0% 90%;
+    --input: 0 0% 96%;
+    --ring: 45 100% 51%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0rem;
   }
+  
   .dark {
-    --background: 0 0% 3.9%;
+    --background: 0 0% 8%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 98%;
     --popover-foreground: 0 0% 9%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
+    --primary: 45 100% 51%;
+    --primary-foreground: 0 0% 8%;
+    --secondary: 220 15% 25%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 45 30% 15%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 45 100% 51%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -63,95 +66,154 @@
   * {
     @apply border-border;
   }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
   body {
     @apply bg-background text-foreground;
     background-color: #ffffff;
-    color: #000000;
+    color: #141414;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
-  /* Force white background and ensure text visibility for main content */
+  /* Luxury Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  
+  h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 700;
+  }
+  
+  h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+  }
+  
+  h3 {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 600;
+  }
+  
+  /* Luxury Cards - Square/Rectangular Design */
   .card, [class*="card"], [class*="Card"] {
     background-color: #ffffff;
-    color: #000000;
+    color: #141414;
+    border-radius: 0rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  /* Force white background for form inputs with visible text */
+  .card:hover, [class*="card"]:hover, [class*="Card"]:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Luxury Form Elements - Square Design */
   input, textarea, select {
     background-color: #ffffff;
-    color: #000000;
+    color: #141414;
+    border: 1px solid #e5e5e5;
+    border-radius: 0rem;
+    padding: 0.875rem 1.25rem;
+    font-size: 1rem;
+    transition: all 0.2s ease;
   }
   
-  /* Force white background for search containers with visible text */
-  .search-container, .search-box, [class*="search"] {
-    background-color: #ffffff;
-    color: #000000;
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: #d4af37;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
   }
   
-  /* Force white background for dropdown menus with visible text */
-  .dropdown-menu, [class*="dropdown"] {
-    background-color: #ffffff;
-    color: #000000;
+  /* Luxury Buttons - Square Design */
+  button, .button, [type='button'], [type='reset'], [type='submit'] {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    border-radius: 0rem;
+    padding: 0.875rem 2rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
   }
   
-  /* Force white background for navigation with visible text */
+  button:hover, .button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Luxury Navigation */
   nav {
-    background-color: #ffffff;
-    color: #000000;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
   
-  /* Ensure main content text has visible colors */
-  h1, h2, h3, h4, h5, h6 {
-    color: #000000;
-  }
-  
-  p, span, div, label {
-    color: #000000;
-  }
-  
-  /* Ensure links are visible */
-  a {
-    color: #000000;
-  }
-  
-  /* Ensure buttons have visible text */
-  button {
-    color: #000000;
-  }
-  
-  /* Special case: Hero section text should remain white */
+  /* Hero Section Override */
   .hero-text, [class*="hero"] h1, [class*="hero"] h2, [class*="hero"] p {
     color: #ffffff !important;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
   }
   
-  /* Override for hero overlay text specifically */
-  .relative.z-10 h1, .relative.z-10 p {
-    color: #ffffff !important;
+  /* Luxury Spacing */
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  
+  @media (min-width: 768px) {
+    .container {
+      padding: 0 3rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .container {
+      padding: 0 4rem;
+    }
   }
 }
 
-@layer base {
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-title;
+@layer components {
+  /* Luxury Button Variants */
+  .btn-primary {
+    @apply bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-white border-0;
   }
-
-  body {
-    @apply font-body;
+  
+  .btn-secondary {
+    @apply bg-transparent text-[#141414] border-2 border-[#141414] hover:bg-[#141414] hover:text-white;
   }
-
-  /* Add styles for buttons */
-  button, 
-  .button,
-  [type='button'],
-  [type='reset'],
-  [type='submit'] {
-    @apply font-title font-medium;
+  
+  .btn-outline {
+    @apply bg-transparent text-[#d4af37] border-2 border-[#d4af37] hover:bg-[#d4af37] hover:text-white;
   }
-
-  /* Style anchor tags that look like buttons */
-  a[class*="btn"],
-  a[class*="button"],
-  .btn,
-  .button {
-    @apply font-title font-medium;
+  
+  /* Luxury Card Variants */
+  .card-luxury {
+    @apply bg-white rounded-none shadow-lg border border-gray-100 overflow-hidden;
+  }
+  
+  /* Luxury Input Variants */
+  .input-luxury {
+    @apply bg-white border border-gray-200 rounded-none px-6 py-4 text-lg focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/20;
+  }
+  
+  /* Luxury Section Spacing */
+  .section-luxury {
+    @apply py-20 px-0;
+  }
+  
+  .section-luxury-sm {
+    @apply py-12 px-0;
   }
 }

@@ -26,13 +26,7 @@ export default async function AgencyDetail({
       .eq("ID", agencyId)
       .single();
 
-    // THÊM DEBUG ĐỂ KIỂM TRA DỮ LIỆU
-    console.log("=== DEBUG AGENCY DATA ===");
-    console.log("Raw agency data:", agency);
-    console.log("All keys:", agency ? Object.keys(agency) : "No agency data");
-    console.log("Legal Company Name value:", agency?.["Legal Company Name (As Per Companies House)"]);
-    console.log("Company name:", agency?.["Company name"]);
-    console.log("=== END DEBUG ===");
+    // Remove debug logs for better performance
 
     if (error || !agency) {
       return <pre>Error: {error?.message || "Agency not found"}</pre>;

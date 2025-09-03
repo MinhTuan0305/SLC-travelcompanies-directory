@@ -1,54 +1,40 @@
 import type { Metadata } from "next";
-import { Poppins, Nunito_Sans } from "next/font/google";
-import { ThemeProvider } from "next-themes";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar"; // 🔹 import Navbar
+import { ThemeProvider } from "next-themes";
+import Navbar from "@/components/Navbar";
 
-const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "UK Travel Agency Directory - Luxury Travel Services",
+  description: "Discover and connect with the world's most prestigious travel agencies across the United Kingdom. Experience luxury travel planning with trusted partners.",
+  keywords: "luxury travel, UK travel agencies, premium travel services, exclusive travel experiences",
+  authors: [{ name: "SLC Travel Marketing" }],
+  openGraph: {
+    title: "UK Travel Agency Directory - Luxury Travel Services",
+    description: "Discover and connect with the world's most prestigious travel agencies across the United Kingdom.",
+    type: "website",
+    locale: "en_GB",
+  },
 };
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins",
-  display: "swap",
-});
-
-const nunitoSans = Nunito_Sans({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-nunito-sans",
-  display: "swap",
-});
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="en"
-      className={`${poppins.variable} ${nunitoSans.variable}`}
-      suppressHydrationWarning
-    >
-      <body className="font-body antialiased">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+      <body className={`${inter.className} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          {/* 🔹 Navbar luôn hiển thị trên mọi trang */}
           <Navbar />
-          <main>{children}</main>
+          <main className="pt-20">{children}</main>
         </ThemeProvider>
       </body>
     </html>

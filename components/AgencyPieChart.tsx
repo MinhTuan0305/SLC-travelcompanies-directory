@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import CountUpAnimation from "./CountUpAnimation";
 
 type Datum = { name: string; value: number };
 
@@ -58,8 +59,13 @@ export default function AgencyPieChart({ data, title }: Props) {
         fill="#fff"
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={12}
-        fontWeight={700}
+        fontSize={14}
+        fontWeight={800}
+        fontFamily="system-ui, -apple-system, sans-serif"
+        style={{
+          textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+          letterSpacing: "0.025em"
+        }}
       >
         {text}
       </text>
@@ -88,13 +94,34 @@ export default function AgencyPieChart({ data, title }: Props) {
         width: 220,
       }}
     >
-      <div style={{ fontSize: 13, color: "#1f2937", fontWeight: 700 }}>
+      <div style={{ 
+        fontSize: 14, 
+        color: "#1f2937", 
+        fontWeight: 700,
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        letterSpacing: "0.025em"
+      }}>
         {data[selectedIndex].name}
       </div>
-      <div style={{ fontSize: 14, color: "#374151", marginTop: 6 }}>
-        {view === "percent"
-          ? `${Math.round((data[selectedIndex].value / (total || 1)) * 100)}%`
-          : data[selectedIndex].value}
+      <div style={{ 
+        fontSize: 16, 
+        color: "#374151", 
+        marginTop: 6,
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        fontWeight: 600
+      }}>
+        {view === "percent" ? (
+          <CountUpAnimation 
+            end={Math.round((data[selectedIndex].value / (total || 1)) * 100)} 
+            duration={1000} 
+            suffix="%" 
+          />
+        ) : (
+          <CountUpAnimation 
+            end={data[selectedIndex].value} 
+            duration={1000} 
+          />
+        )}
       </div>
     </div>
   ) : null;
@@ -175,8 +202,24 @@ export default function AgencyPieChart({ data, title }: Props) {
 
             <Tooltip
               formatter={(val: number, name: string) => [tooltipFormatter(val), name]}
+              contentStyle={{
+                backgroundColor: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
             />
-            <Legend />
+            <Legend 
+              wrapperStyle={{
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                fontSize: '13px',
+                fontWeight: '500',
+                paddingTop: '20px'
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
 
