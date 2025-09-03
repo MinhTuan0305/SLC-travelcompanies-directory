@@ -41,7 +41,7 @@ export function useOptimizedQuery<T>({
   });
   
   const retryCountRef = useRef(0);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const executeQuery = useCallback(async () => {
     if (!enabled) return;
