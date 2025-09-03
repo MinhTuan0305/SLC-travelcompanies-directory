@@ -66,9 +66,6 @@ export default function ImagePreloader({
     };
   }, [images, onLoadComplete, onLoadError]);
 
-  return {
-    loadedImages,
-    isComplete,
-    progress: (loadedImages.size / images.length) * 100
-  };
+  // Return null since this is just a preloader component
+  return null;
 }
