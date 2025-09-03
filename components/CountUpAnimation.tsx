@@ -24,7 +24,7 @@ export default function CountUpAnimation({
   const [count, setCount] = useState(start);
   const [isVisible, setIsVisible] = useState(false);
   const countRef = useRef<HTMLSpanElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
