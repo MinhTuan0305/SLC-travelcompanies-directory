@@ -1,6 +1,9 @@
 "use client";
-import { useState, useEffect, Suspense, useCallback, useMemo } from "react";
-import SearchBar from "./SearchBar";
+import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
+import ImagePreloader from "./ImagePreloader";
+
+// Lazy load SearchBar to reduce initial bundle size
+const SearchBar = lazy(() => import("./SearchBar"));
 
 const images = [
   "/Hero.jpg",   // Ảnh 1
@@ -9,9 +12,30 @@ const images = [
   "/Hero4.jpg",  // Ảnh 4
 ];
 
-export default function Hero() {
+export default function OptimizedHero() {
   const [current, setCurrent] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const heroElement = document.getElementById('hero-section');
+    if (heroElement) {
+      observer.observe(heroElement);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   // Memoize image change handler
   const handleImageChange = useCallback((index: number) => {
@@ -25,31 +49,11 @@ export default function Hero() {
 
   // Optimized interval with cleanup
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !isVisible) return;
     
     const interval = setInterval(nextImage, 6000);
     return () => clearInterval(interval);
-  }, [nextImage, isLoaded]);
-
-  // Preload images and set loaded state
-  useEffect(() => {
-    const preloadImages = () => {
-      const promises = images.map((src) => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = src;
-        });
-      });
-      
-      Promise.all(promises)
-        .then(() => setIsLoaded(true))
-        .catch(() => setIsLoaded(true)); // Still show even if some images fail
-    };
-
-    preloadImages();
-  }, []);
+  }, [nextImage, isLoaded, isVisible]);
 
   // Memoize indicators to prevent unnecessary re-renders
   const indicators = useMemo(() => (
@@ -67,13 +71,35 @@ export default function Hero() {
     ))
   ), [current, handleImageChange]);
 
+  // Enhanced fallback for SearchBar
+  const SearchBarFallback = useMemo(() => (
+    <div className="w-full max-w-2xl animate-scale-in">
+      <div className="relative">
+        <div className="w-full h-16 bg-white/95 backdrop-blur-sm rounded-md animate-pulse border border-gray-200"></div>
+        <div className="absolute right-0 top-0 h-16 w-24 bg-gradient-to-r from-luxury-gold/20 to-luxury-gold/40 rounded-r-md animate-pulse"></div>
+      </div>
+    </div>
+  ), []);
+
   return (
-    <div className="relative h-screen overflow-hidden">
+    <div id="hero-section" className="relative h-screen overflow-hidden">
       {/* Static first image - always visible, no hydration issues */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url('${images[0]}')` }}
       />
+      
+      {/* Image Preloader - only when visible */}
+      {isVisible && (
+        <ImagePreloader
+          images={images}
+          onLoadComplete={() => setIsLoaded(true)}
+          onLoadError={(error) => {
+            console.warn('Hero image preload error:', error);
+            setIsLoaded(true); // Still show even if some images fail
+          }}
+        />
+      )}
       
       {/* Animated slider overlay - only visible after images are loaded */}
       {isLoaded && (
@@ -109,15 +135,8 @@ export default function Hero() {
           Discover and connect with the world's most prestigious travel agencies across the United Kingdom
         </p>
         
-        {/* Luxury Search Bar - Using SearchBar Component */}
-        <Suspense fallback={
-          <div className="w-full max-w-2xl animate-scale-in">
-            <div className="relative">
-              <div className="w-full h-16 bg-white/95 backdrop-blur-sm rounded-md animate-pulse border border-gray-200"></div>
-              <div className="absolute right-0 top-0 h-16 w-24 bg-gradient-to-r from-luxury-gold/20 to-luxury-gold/40 rounded-r-md animate-pulse"></div>
-            </div>
-          </div>
-        }>
+        {/* Luxury Search Bar - Lazy loaded with Suspense */}
+        <Suspense fallback={SearchBarFallback}>
           <SearchBar 
             variant="hero" 
             placeholder="Search for luxury travel experiences..."
