@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import SearchBar from "./SearchBar";
 
 const images = [
@@ -61,10 +61,12 @@ export default function Hero() {
         </p>
         
         {/* Luxury Search Bar - Using SearchBar Component */}
-        <SearchBar 
-          variant="hero" 
-          placeholder="Search for luxury travel experiences..."
-        />
+        <Suspense fallback={<div className="w-full max-w-2xl h-16 bg-white/95 rounded-md animate-pulse"></div>}>
+          <SearchBar 
+            variant="hero" 
+            placeholder="Search for luxury travel experiences..."
+          />
+        </Suspense>
         
         {/* Luxury Indicators - Square Design */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex space-x-4">
