@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { createNews } from "@/lib/services/newsService";
-import { CreateNewsData } from "@/types/news";
+import { CreateNewsData, UpdateNewsData } from "@/types/news";
 import NewsForm from "@/components/NewsForm";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -26,9 +26,16 @@ export default function CreateNewsPage() {
     }
   }, [user, isAdmin, authLoading, router]);
 
-  const handleSubmit = async (data: CreateNewsData) => {
+  const handleSubmit = async (data: CreateNewsData | UpdateNewsData) => {
     try {
-      await createNews(data);
+      if ('id' in data) {
+        // UpdateNewsData - shouldn't happen in create page
+        console.error("Unexpected UpdateNewsData in create page");
+        return;
+      } else {
+        // CreateNewsData
+        await createNews(data);
+      }
       router.push("/admin/news");
     } catch (error) {
       console.error("Error creating news:", error);
