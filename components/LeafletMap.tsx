@@ -180,6 +180,11 @@ export default function LeafletMap() {
         // Container is already checked by containerReady state
 
         // Create map
+        if (!mapRef.current) {
+          console.error("Map container not found");
+          return;
+        }
+        
         const map = L.map(mapRef.current, {
           preferCanvas: true, // Use canvas renderer for better performance
           zoomControl: true,
