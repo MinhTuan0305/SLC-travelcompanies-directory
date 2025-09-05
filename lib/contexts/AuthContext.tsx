@@ -10,7 +10,6 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  refreshAdminStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,25 +21,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   // Check if user is admin
-  const checkAdminStatus = async (userId: string, userEmail?: string): Promise<boolean> => {
-    if (!userId) {
-      console.log("❌ No user ID, returning false for admin check");
+  const checkAdminStatus = async (): Promise<boolean> => {
+    if (!user) {
+      console.log("❌ No user, returning false for admin check");
       return false;
     }
     
     try {
-      console.log("🔍 Checking admin status for user ID:", userId, "Email:", userEmail);
+      console.log("🔍 Checking admin status for user:", user.email);
       
-      // First check user metadata (fallback)
-      if (userEmail && (userEmail.includes('admin') || userEmail.includes('@admin'))) {
-        console.log("✅ Admin detected via email pattern");
-        return true;
-      }
-      
-      // Check specific admin emails
-      const adminEmails = ['admin@example.com', 'admin@slc.com', 'tuan@admin.com'];
-      if (userEmail && adminEmails.includes(userEmail.toLowerCase())) {
-        console.log("✅ Admin detected via specific email list");
+      // Check user metadata for admin role (fallback)
+      if (user.user_metadata?.role === 'admin') {
+        console.log("✅ Admin logged in (via metadata)");
         return true;
       }
       
@@ -48,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', userId)
+        .eq('id', user.id)
         .single();
       
       console.log("📊 Profile query result:", { profile, error });
@@ -56,13 +48,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!error && profile?.role === 'admin') {
         console.log("✅ Admin logged in (via profiles table)");
         return true;
-      }
-      
-      // If profiles table doesn't exist or has no data, check user metadata
-      if (error && error.code === 'PGRST116') {
-        console.log("⚠️ Profiles table not found, checking user metadata");
-        // This will be handled by the caller with user object
-        return false;
       }
       
       console.log("👤 Normal user");
@@ -87,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.user) {
         setUser(data.user);
-        const adminStatus = await checkAdminStatus(data.user.id, data.user.email);
+        const adminStatus = await checkAdminStatus();
         setIsAdmin(adminStatus);
         
         // Redirect to homepage after successful login
@@ -113,15 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Refresh admin status function
-  const refreshAdminStatus = async () => {
-    if (user) {
-      console.log("🔄 Refreshing admin status...");
-      const adminStatus = await checkAdminStatus(user.id, user.email);
-      setIsAdmin(adminStatus);
-    }
-  };
-
   // Initialize auth state
   useEffect(() => {
     const initializeAuth = async () => {
@@ -133,8 +109,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (user) {
           setUser(user);
-          const adminStatus = await checkAdminStatus(user.id, user.email);
-          setIsAdmin(adminStatus);
+          
+          // Check admin status from profiles table
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+          console.log("🔍 Initialize auth - Profile query result:", { profile, profileError });
+          console.log("🔍 Initialize auth - Profile role:", profile?.role);
+          console.log("🔍 Initialize auth - Is admin check:", profile?.role === "admin");
+
+          if (profile?.role === "admin") {
+            console.log("✅ Admin logged in");
+            setIsAdmin(true);
+          } else {
+            console.log("👤 Normal user");
+            setIsAdmin(false);
+          }
         } else {
           setUser(null);
           setIsAdmin(false);
@@ -153,11 +146,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("🔄 Auth state change:", event, session?.user?.email);
-        
         if (session?.user) {
           setUser(session.user);
-          const adminStatus = await checkAdminStatus(session.user.id, session.user.email);
+          const adminStatus = await checkAdminStatus();
           setIsAdmin(adminStatus);
         } else {
           setUser(null);
@@ -176,7 +167,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     signIn,
     signOut,
-    refreshAdminStatus,
   };
 
   return (
