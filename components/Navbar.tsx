@@ -19,6 +19,7 @@ export default function Navbar() {
 
   const menuItems = [
     { name: "Home Page", href: "/agencies" },
+    { name: "News", href: "/news" },
     { name: "Dashboard", href: "/dashboard" },
     { name: "Map View", href: "/map" },
     { name: "Store Locator", href: "/stores" },
@@ -88,6 +89,14 @@ export default function Navbar() {
                       </div>
                     )}
                   </div>
+                  {isAdmin && (
+                    <Link
+                      href="/admin/news"
+                      className="px-3 py-1 text-sm text-luxury-navy hover:text-luxury-gold hover:bg-luxury-gold/10 rounded transition-colors duration-200 whitespace-nowrap"
+                    >
+                      Manage News
+                    </Link>
+                  )}
                   <button
                     onClick={signOut}
                     className="px-3 py-1 text-sm text-luxury-navy hover:text-luxury-gold hover:bg-luxury-gold/10 rounded transition-colors duration-200 whitespace-nowrap"
