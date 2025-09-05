@@ -6,8 +6,22 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useCache } from "@/lib/hooks/useCache";
-import ResourcePreloader from "@/components/ResourcePreloader";
-import OptimizedPagination from "@/components/OptimizedPagination";
+import dynamic from "next/dynamic";
+
+// Lazy load components
+const ResourcePreloader = dynamic(() => import("@/components/ResourcePreloader"), {
+  loading: () => null
+});
+
+const OptimizedPagination = dynamic(() => import("@/components/OptimizedPagination"), {
+  loading: () => (
+    <div className="flex justify-center items-center space-x-2 animate-pulse">
+      <div className="h-8 bg-gray-200 rounded w-8"></div>
+      <div className="h-8 bg-gray-200 rounded w-8"></div>
+      <div className="h-8 bg-gray-200 rounded w-8"></div>
+    </div>
+  )
+});
 
 interface Store {
   store_id: number;

@@ -6,8 +6,23 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { News } from "@/types/news";
 import { getAllNews, deleteNews } from "@/lib/services/newsService";
-import NewsCard from "@/components/NewsCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import dynamic from "next/dynamic";
+
+// Lazy load NewsCard component
+const NewsCard = dynamic(() => import("@/components/NewsCard"), {
+  loading: () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 animate-pulse">
+      <div className="h-48 bg-gray-200 rounded-t-xl"></div>
+      <div className="p-6">
+        <div className="h-4 bg-gray-200 rounded mb-3"></div>
+        <div className="h-6 bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+      </div>
+    </div>
+  )
+});
 
 export default function AdminNewsPage() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();

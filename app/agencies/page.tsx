@@ -1,12 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import CountySelect from "../../components/CountySelect";
 import SearchBar from "../../components/SearchBar";
-import FloatingSearchBar from "../../components/FloatingSearchBar";
 import QuickJumpSelect from "../../components/QuickJumpSelect";
 import Hero from "../../components/hero";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import AgenciesHeader from "../../components/AgenciesHeader";
+
+// Lazy load components that are not immediately visible
+const FloatingSearchBar = dynamic(() => import("../../components/FloatingSearchBar"), {
+  loading: () => null
+});
 
 type Agency = {
   ID: number;

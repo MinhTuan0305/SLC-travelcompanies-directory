@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
+import AdminStatusRefresher from "@/components/AdminStatusRefresher";
+import AdminStatusDebug from "@/components/AdminStatusDebug";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,6 +37,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <AdminStatusRefresher />
+            <AdminStatusDebug />
             <Navbar />
             <main className="pt-20">{children}</main>
           </AuthProvider>

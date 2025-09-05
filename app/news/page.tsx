@@ -1,6 +1,12 @@
 import { getPublishedNews, getFeaturedNews } from "@/lib/services/newsService";
-import NewsCard from "@/components/NewsCard";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
+
+// Lazy load NewsCard component
+const NewsCard = dynamic(() => import("@/components/NewsCard"), {
+  loading: () => <LoadingSkeleton type="card" className="bg-white shadow-sm border border-gray-200" />
+});
 
 export default async function NewsPage() {
   const [news, featuredNews] = await Promise.all([

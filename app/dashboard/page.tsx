@@ -1,9 +1,24 @@
 // app/dashboard/page.tsx
 import { createClient } from "@/lib/supabase/server";
-import AgencyBarChart from "@/components/AgencyBarChart";
-import AgencyPieChart from "@/components/AgencyPieChart";
-import AnimatedStatCard from "@/components/AnimatedStatCard";
-import CountUpAnimation from "@/components/CountUpAnimation";
+import dynamic from "next/dynamic";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
+
+// Lazy load chart components
+const AgencyBarChart = dynamic(() => import("@/components/AgencyBarChart"), {
+  loading: () => <LoadingSkeleton type="chart" className="rounded-lg" />
+});
+
+const AgencyPieChart = dynamic(() => import("@/components/AgencyPieChart"), {
+  loading: () => <LoadingSkeleton type="chart" className="rounded-lg" />
+});
+
+const AnimatedStatCard = dynamic(() => import("@/components/AnimatedStatCard"), {
+  loading: () => <LoadingSkeleton type="card" className="h-32 rounded-lg" />
+});
+
+const CountUpAnimation = dynamic(() => import("@/components/CountUpAnimation"), {
+  loading: () => <LoadingSkeleton type="button" className="w-20" />
+});
 
 export const revalidate = 3600;
 

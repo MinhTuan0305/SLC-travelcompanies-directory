@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
+
+// Lazy load components if any are added in the future
 
 const faqs = [
   {

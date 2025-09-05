@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshAdminStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,26 +22,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   // Check if user is admin
-  const checkAdminStatus = async (): Promise<boolean> => {
-    if (!user) {
-      console.log("❌ No user, returning false for admin check");
+  const checkAdminStatus = async (userId: string): Promise<boolean> => {
+    if (!userId) {
+      console.log("❌ No user ID, returning false for admin check");
       return false;
     }
     
     try {
-      console.log("🔍 Checking admin status for user:", user.email);
-      
-      // Check user metadata for admin role (fallback)
-      if (user.user_metadata?.role === 'admin') {
-        console.log("✅ Admin logged in (via metadata)");
-        return true;
-      }
+      console.log("🔍 Checking admin status for user ID:", userId);
       
       // Check against profiles table
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
       
       console.log("📊 Profile query result:", { profile, error });
@@ -72,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.user) {
         setUser(data.user);
-        const adminStatus = await checkAdminStatus();
+        const adminStatus = await checkAdminStatus(data.user.id);
         setIsAdmin(adminStatus);
         
         // Redirect to homepage after successful login
@@ -98,6 +93,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Refresh admin status function
+  const refreshAdminStatus = async () => {
+    if (user) {
+      console.log("🔄 Refreshing admin status...");
+      const adminStatus = await checkAdminStatus(user.id);
+      setIsAdmin(adminStatus);
+    }
+  };
+
   // Initialize auth state
   useEffect(() => {
     const initializeAuth = async () => {
@@ -109,25 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (user) {
           setUser(user);
-          
-          // Check admin status from profiles table
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-          console.log("🔍 Initialize auth - Profile query result:", { profile, profileError });
-          console.log("🔍 Initialize auth - Profile role:", profile?.role);
-          console.log("🔍 Initialize auth - Is admin check:", profile?.role === "admin");
-
-          if (profile?.role === "admin") {
-            console.log("✅ Admin logged in");
-            setIsAdmin(true);
-          } else {
-            console.log("👤 Normal user");
-            setIsAdmin(false);
-          }
+          const adminStatus = await checkAdminStatus(user.id);
+          setIsAdmin(adminStatus);
         } else {
           setUser(null);
           setIsAdmin(false);
@@ -146,9 +133,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("🔄 Auth state change:", event, session?.user?.email);
+        
         if (session?.user) {
           setUser(session.user);
-          const adminStatus = await checkAdminStatus();
+          const adminStatus = await checkAdminStatus(session.user.id);
           setIsAdmin(adminStatus);
         } else {
           setUser(null);
@@ -167,6 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     signIn,
     signOut,
+    refreshAdminStatus,
   };
 
   return (

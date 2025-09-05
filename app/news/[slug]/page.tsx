@@ -3,6 +3,22 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
+import dynamic from "next/dynamic";
+
+// Lazy load NewsCard for related articles
+const NewsCard = dynamic(() => import("@/components/NewsCard"), {
+  loading: () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 animate-pulse">
+      <div className="h-48 bg-gray-200 rounded-t-xl"></div>
+      <div className="p-6">
+        <div className="h-4 bg-gray-200 rounded mb-3"></div>
+        <div className="h-6 bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+      </div>
+    </div>
+  )
+});
 
 interface NewsDetailPageProps {
   params: Promise<{ slug: string }>;
