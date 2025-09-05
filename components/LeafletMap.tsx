@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import "leaflet/dist/leaflet.css";
 
 interface Agency {
   ID: number;
@@ -160,8 +161,7 @@ export default function LeafletMap() {
         // Import Leaflet dynamically
         const L = (await import("leaflet")).default;
         
-        // Import CSS
-        await import("leaflet/dist/leaflet.css");
+        // CSS is imported at the top of the file
 
         // Fix default markers for Next.js
         delete (L.Icon.Default.prototype as any)._getIconUrl;
