@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { getNewsById, updateNews } from "@/lib/services/newsService";
-import { News, UpdateNewsData } from "@/types/news";
+import { News, CreateNewsData, UpdateNewsData } from "@/types/news";
 import NewsForm from "@/components/NewsForm";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -54,9 +54,16 @@ export default function EditNewsPage({ params }: EditNewsPageProps) {
     loadNews();
   }, [user, isAdmin, authLoading, router, params]);
 
-  const handleSubmit = async (data: UpdateNewsData) => {
+  const handleSubmit = async (data: CreateNewsData | UpdateNewsData) => {
     try {
-      await updateNews(data.id, data);
+      if ('id' in data) {
+        // UpdateNewsData
+        await updateNews(data.id, data);
+      } else {
+        // This shouldn't happen in edit page, but handle it gracefully
+        console.error("Unexpected CreateNewsData in edit page");
+        return;
+      }
       router.push("/admin/news");
     } catch (error) {
       console.error("Error updating news:", error);
