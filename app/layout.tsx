@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
 import AdminStatusRefresher from "@/components/AdminStatusRefresher";
 import AdminStatusDebug from "@/components/AdminStatusDebug";
+import AdminTestPanel from "@/components/AdminTestPanel";
+import DebugPanelToggle from "@/components/DebugPanelToggle";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -38,7 +40,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <AdminStatusRefresher />
+            <DebugPanelToggle />
             <AdminStatusDebug />
+            <AdminTestPanel />
             <Navbar />
             <main className="pt-20">{children}</main>
           </AuthProvider>

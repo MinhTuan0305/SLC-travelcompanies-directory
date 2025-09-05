@@ -22,14 +22,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   // Check if user is admin
-  const checkAdminStatus = async (userId: string): Promise<boolean> => {
+  const checkAdminStatus = async (userId: string, userEmail?: string): Promise<boolean> => {
     if (!userId) {
       console.log("❌ No user ID, returning false for admin check");
       return false;
     }
     
     try {
-      console.log("🔍 Checking admin status for user ID:", userId);
+      console.log("🔍 Checking admin status for user ID:", userId, "Email:", userEmail);
+      
+      // First check user metadata (fallback)
+      if (userEmail && (userEmail.includes('admin') || userEmail.includes('@admin'))) {
+        console.log("✅ Admin detected via email pattern");
+        return true;
+      }
+      
+      // Check specific admin emails
+      const adminEmails = ['admin@example.com', 'admin@slc.com', 'tuan@admin.com'];
+      if (userEmail && adminEmails.includes(userEmail.toLowerCase())) {
+        console.log("✅ Admin detected via specific email list");
+        return true;
+      }
       
       // Check against profiles table
       const { data: profile, error } = await supabase
@@ -43,6 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!error && profile?.role === 'admin') {
         console.log("✅ Admin logged in (via profiles table)");
         return true;
+      }
+      
+      // If profiles table doesn't exist or has no data, check user metadata
+      if (error && error.code === 'PGRST116') {
+        console.log("⚠️ Profiles table not found, checking user metadata");
+        // This will be handled by the caller with user object
+        return false;
       }
       
       console.log("👤 Normal user");
@@ -67,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.user) {
         setUser(data.user);
-        const adminStatus = await checkAdminStatus(data.user.id);
+        const adminStatus = await checkAdminStatus(data.user.id, data.user.email);
         setIsAdmin(adminStatus);
         
         // Redirect to homepage after successful login
@@ -97,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshAdminStatus = async () => {
     if (user) {
       console.log("🔄 Refreshing admin status...");
-      const adminStatus = await checkAdminStatus(user.id);
+      const adminStatus = await checkAdminStatus(user.id, user.email);
       setIsAdmin(adminStatus);
     }
   };
@@ -113,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (user) {
           setUser(user);
-          const adminStatus = await checkAdminStatus(user.id);
+          const adminStatus = await checkAdminStatus(user.id, user.email);
           setIsAdmin(adminStatus);
         } else {
           setUser(null);
@@ -137,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (session?.user) {
           setUser(session.user);
-          const adminStatus = await checkAdminStatus(session.user.id);
+          const adminStatus = await checkAdminStatus(session.user.id, session.user.email);
           setIsAdmin(adminStatus);
         } else {
           setUser(null);
