@@ -109,20 +109,20 @@ export default function Hero() {
           Discover and connect with the world's most prestigious travel agencies across the United Kingdom
         </p>
         
-        {/* Luxury Search Bar - Using SearchBar Component */}
-        <Suspense fallback={
-          <div className="w-full max-w-2xl animate-scale-in">
-            <div className="relative">
-              <div className="w-full h-16 bg-white/95 backdrop-blur-sm rounded-md animate-pulse border border-gray-200"></div>
-              <div className="absolute right-0 top-0 h-16 w-24 bg-gradient-to-r from-luxury-gold/20 to-luxury-gold/40 rounded-r-md animate-pulse"></div>
-            </div>
-          </div>
-        }>
-          <SearchBar 
-            variant="hero" 
-            placeholder="Search for luxury travel experiences..."
-          />
-        </Suspense>
+        {/* Find Agency Button */}
+        <div className="animate-scale-in">
+          <button
+            onClick={() => {
+              const searchSection = document.getElementById('search-section');
+              if (searchSection) {
+                searchSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="bg-gradient-luxury hover:bg-luxury-gold-dark text-white px-8 py-4 text-lg font-semibold transition-all duration-300 shadow-luxury hover:shadow-luxury-hover transform hover:-translate-y-1 rounded-md"
+          >
+            Find Agency
+          </button>
+        </div>
         
         {/* Luxury Indicators - Square Design */}
         {isLoaded && (

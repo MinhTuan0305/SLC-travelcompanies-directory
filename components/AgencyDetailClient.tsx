@@ -4,6 +4,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import NotesSection from "./NotesSection";
 
 interface Agency {
   ID?: number;
@@ -79,6 +81,12 @@ const InfoCard = ({
 export default function AgencyDetailClient({ agency }: { agency: Agency }) {
   const router = useRouter();
   const supabase = createClient();
+  const { isAdmin, user } = useAuth();
+
+  // Debug logging
+  console.log('AgencyDetailClient - User:', user?.email);
+  console.log('AgencyDetailClient - IsAdmin:', isAdmin);
+  console.log('AgencyDetailClient - Should show admin buttons:', user && isAdmin);
 
   const handleDelete = async () => {
     if (!agency.ID) return;
@@ -101,6 +109,37 @@ export default function AgencyDetailClient({ agency }: { agency: Agency }) {
       alert("❌ An unexpected error occurred.");
       console.error(err);
     }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      alert("🔒 You need to log in to edit this agency.");
+      router.push("/auth/login");
+      return;
+    }
+    if (!isAdmin) {
+      e.preventDefault();
+      alert("🔒 Only admins can edit this agency.");
+      return;
+    }
+    // Nếu là admin, cho phép chuyển đến trang edit
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      alert("🔒 You need to log in to delete this agency.");
+      router.push("/auth/login");
+      return;
+    }
+    if (!isAdmin) {
+      e.preventDefault();
+      alert("🔒 Only admins can delete this agency.");
+      return;
+    }
+    // Nếu là admin, cho phép xóa
+    handleDelete();
   };
 
   return (
@@ -137,7 +176,6 @@ export default function AgencyDetailClient({ agency }: { agency: Agency }) {
                 </p>
               )}
               <div className="flex items-center gap-2 text-slate-600">
-                <span>📍</span>
                 <span className="font-medium">
                   {agency["Head Office COUNTY"] || "N/A"}
                 </span>
@@ -145,16 +183,17 @@ export default function AgencyDetailClient({ agency }: { agency: Agency }) {
             </div>
             <div className="flex gap-3">
               <Link
-                href={`/agencies/${agency.ID}/edit`}
-                className="px-6 py-3 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors duration-200 font-medium shadow-sm hover:shadow-md flex items-center gap-2"
+                href={user && isAdmin ? `/agencies/${agency.ID}/edit` : "#"}
+                onClick={handleEditClick}
+                className="px-6 py-3 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors duration-200 font-medium shadow-sm hover:shadow-md"
               >
-                ✏️ Edit
+                Edit
               </Link>
               <button
-                onClick={handleDelete}
-                className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium shadow-sm hover:shadow-md flex items-center gap-2"
+                onClick={handleDeleteClick}
+                className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium shadow-sm hover:shadow-md"
               >
-                🗑️ Delete
+                Delete
               </button>
             </div>
           </div>
@@ -163,9 +202,6 @@ export default function AgencyDetailClient({ agency }: { agency: Agency }) {
         {/* About */}
         <div className="mb-8 p-8 bg-white rounded-2xl shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <span className="text-indigo-600">ℹ️</span>
-            </div>
             <h2 className="text-2xl font-bold text-slate-800">About Us</h2>
           </div>
           <p className="text-slate-700 leading-relaxed text-lg">
@@ -175,38 +211,32 @@ export default function AgencyDetailClient({ agency }: { agency: Agency }) {
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-          <InfoCard title="Sector" content={agency.SECTOR} icon="🏢" />
+          <InfoCard title="Sector" content={agency.SECTOR} />
           <InfoCard
             title="Company Size"
             content={agency["SIZE (BASED ON STAFF NUMBER)"]}
-            icon="👥"
           />
           <InfoCard
             title="Head Office Address"
             content={agency.Address}
-            icon="🏠"
           />
           <InfoCard
             title="Legal Name"
             content={agency["Legal Comapny Name (As Per Companies House)"]}
-            icon="📋"
           />
-          <InfoCard title="ATOL Number" content={agency["ATOL Number"]} icon="🛡️" />
+          <InfoCard title="ATOL Number" content={agency["ATOL Number"]} />
           <InfoCard
             title="Geographic Specialisation"
             content={agency["Geographic Specialisation"]}
-            icon="🌍"
           />
           <InfoCard
             title="Other Store Locations (UK)"
             content={agency["Other Store Locations (UK)"]}
-            icon="📍"
             className="md:col-span-2 xl:col-span-3"
           />
           <InfoCard
             title="Destinations We Sell"
             content={agency["Destinations Selling (Country / Continent)"]}
-            icon="✈️"
             className="md:col-span-2 xl:col-span-3"
           />
         </div>
@@ -215,9 +245,6 @@ export default function AgencyDetailClient({ agency }: { agency: Agency }) {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-blue-600">🗺️</span>
-              </div>
               <h2 className="text-2xl font-bold text-slate-800">Find Us</h2>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -225,26 +252,41 @@ export default function AgencyDetailClient({ agency }: { agency: Agency }) {
                 href={getGoogleMapsUrl(agency.Address)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-colors duration-200 ${
+                className={`inline-flex items-center px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-colors duration-200 ${
                   agency.Address
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-slate-300 text-slate-600 cursor-not-allowed"
                 }`}
               >
-                🧭 {agency.Address ? "Get Directions" : "N/A"}
+                {agency.Address ? "Get Directions" : "N/A"}
               </a>
               <a
                 href={formatWebsiteUrl(agency["Link to website"])}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-colors duration-200 ${
+                className={`inline-flex items-center px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-colors duration-200 ${
                   agency["Link to website"]
                     ? "bg-green-600 text-white hover:bg-green-700"
                     : "bg-slate-300 text-slate-600 cursor-not-allowed"
                 }`}
               >
-                🌐 {agency["Link to website"] ? "Visit Website" : "N/A"}
+                {agency["Link to website"] ? "Visit Website" : "N/A"}
               </a>
+              
+              {/* Admin Actions - Show for all users but with permission check */}
+              <Link
+                href={user && isAdmin ? `/agencies/${agency.ID}/edit` : "#"}
+                onClick={handleEditClick}
+                className="inline-flex items-center px-4 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors duration-200 text-sm font-medium shadow-sm"
+              >
+                Edit Agency
+              </Link>
+              <button
+                onClick={handleDeleteClick}
+                className="inline-flex items-center px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-200 text-sm font-medium shadow-sm"
+              >
+                Delete Agency
+              </button>
             </div>
           </div>
           {agency.Address ? (
@@ -258,6 +300,11 @@ export default function AgencyDetailClient({ agency }: { agency: Agency }) {
           )}
         </div>
       </div>
+
+      {/* Notes Section - Only for logged in users */}
+      {user && agency.ID && (
+        <NotesSection agencyId={agency.ID} />
+      )}
     </div>
   );
 }

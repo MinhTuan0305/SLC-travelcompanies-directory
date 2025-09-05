@@ -5,10 +5,17 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ThemeSwitcher } from "./theme-switcher";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, isAdmin, signOut } = useAuth();
+
+  // Extract username from email (part before @)
+  const getUsername = (email: string) => {
+    return email.split('@')[0];
+  };
 
   const menuItems = [
     { name: "Home Page", href: "/agencies" },
@@ -28,12 +35,12 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100/50 shadow-luxury">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          {/* Logo with Link */}
+          {/* Logo with Link - Sát mép trái */}
           <Link 
             href="/agencies" 
-            className="flex items-center hover:opacity-80 transition-all duration-300 group -ml-4" 
+            className="flex items-center hover:opacity-80 transition-all duration-300 group flex-shrink-0" 
             onClick={closeMobileMenu}
           >
             <div className="relative">
@@ -48,29 +55,59 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Menu */}
+          {/* Desktop Menu - Sát mép phải */}
           <div className="hidden lg:flex items-center h-full">
-            {menuItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`h-full flex items-center px-6 text-sm font-medium transition-all duration-300 ${
-                  pathname === item.href
-                    ? "text-luxury-gold bg-luxury-gold/10 border-b-2 border-luxury-gold"
-                    : "text-luxury-navy hover:text-luxury-gold hover:bg-luxury-gold/5"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
-            <div className="ml-4">
+            <div className="flex items-center h-full">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`h-full flex items-center px-4 text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    pathname === item.href
+                      ? "text-luxury-gold bg-luxury-gold/10 border-b-2 border-luxury-gold"
+                      : "text-luxury-navy hover:text-luxury-gold hover:bg-luxury-gold/5"
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </div>
+            
+            {/* User Section */}
+            <div className="ml-6 flex items-center space-x-3">
               <ThemeSwitcher />
+              {user ? (
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-right">
+                    <div className="text-luxury-navy font-medium">
+                      {getUsername(user.email || '')}
+                    </div>
+                    {isAdmin && (
+                      <div className="text-xs text-luxury-gold font-semibold">
+                        Admin
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={signOut}
+                    className="px-3 py-1 text-sm text-luxury-navy hover:text-luxury-gold hover:bg-luxury-gold/10 rounded transition-colors duration-200 whitespace-nowrap"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="px-4 py-2 text-sm font-medium text-luxury-navy hover:text-luxury-gold hover:bg-luxury-gold/10 rounded transition-colors duration-200 whitespace-nowrap"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
 
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center space-x-2">
-            <ThemeSwitcher />
             <button
               type="button"
               className="p-3 text-luxury-navy hover:text-luxury-gold focus:outline-none transition-colors duration-200"
@@ -108,6 +145,41 @@ export default function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* User Info in Mobile Menu */}
+              <div className="px-6 py-4 border-t border-gray-100/50 mt-4">
+                {user ? (
+                  <div className="space-y-2">
+                    <div className="text-sm">
+                      <div className="text-luxury-navy font-medium">
+                        {getUsername(user.email || '')}
+                      </div>
+                      {isAdmin && (
+                        <div className="text-xs text-luxury-gold font-semibold">
+                          Admin
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        signOut();
+                        closeMobileMenu();
+                      }}
+                      className="w-full px-4 py-2 text-sm font-medium text-luxury-navy hover:text-luxury-gold hover:bg-luxury-gold/10 rounded transition-colors duration-200"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/auth/login"
+                    className="block px-4 py-2 text-sm font-medium text-luxury-navy hover:text-luxury-gold hover:bg-luxury-gold/10 rounded transition-colors duration-200"
+                    onClick={closeMobileMenu}
+                  >
+                    Login
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         )}

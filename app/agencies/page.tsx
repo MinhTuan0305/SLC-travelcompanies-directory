@@ -6,6 +6,7 @@ import FloatingSearchBar from "../../components/FloatingSearchBar";
 import QuickJumpSelect from "../../components/QuickJumpSelect";
 import Hero from "../../components/hero";
 import ErrorBoundary from "../../components/ErrorBoundary";
+import AgenciesHeader from "../../components/AgenciesHeader";
 
 type Agency = {
   ID: number;
@@ -15,6 +16,7 @@ type Agency = {
   "SIZE (BASED ON STAFF NUMBER)"?: string;
   "Geographic Specialisation"?: string;
   "Address"?: string;
+  "ATOL Number"?: string;
   agency_img?: {
     "Logo URL"?: string;
   };
@@ -25,6 +27,7 @@ export default async function Agencies({
 }: {
   searchParams: Promise<{
     q?: string;
+    atol?: string;
     sort?: string;
     page?: string;
     size?: string;
@@ -38,6 +41,7 @@ export default async function Agencies({
   // 🔹 Resolve searchParams
   const params = await searchParams;
   const searchQuery = params?.q || "";
+  const atolQuery = params?.atol || "";
   const sort = params?.sort || "desc";
   const sizeFilter = params?.size || "";
   const countyFilter = params?.county || "";
@@ -51,6 +55,20 @@ export default async function Agencies({
   const uniqueSizes = Array.from(
     new Set(sizeOptions?.map((row) => row["SIZE (BASED ON STAFF NUMBER)"]?.trim()).filter(Boolean))
   ).sort();
+  
+  // Create improved size filter options with specific ranges
+  const predefinedSizes = ["Micro", "Small", "Medium", "Large"];
+  const existingSizes = uniqueSizes.filter(size => !predefinedSizes.includes(size));
+  
+  const sizeFilterOptions = [
+    { value: "", label: "All Sizes" },
+    { value: "Micro", label: "Micro (<10 staff)" },
+    { value: "Small", label: "Small (<50 staff)" },
+    { value: "Medium", label: "Medium (50-99 staff)" },
+    { value: "Large", label: "Large (100+ staff)" },
+    // Keep existing sizes for backward compatibility (excluding predefined ones)
+    ...existingSizes.map(size => ({ value: size, label: size }))
+  ];
 
   const { data: countyOptions } = await supabase.from("uk_agency").select('"Head Office COUNTY"');
   const uniqueCounties = Array.from(
@@ -81,7 +99,41 @@ export default async function Agencies({
       `"Head Office COUNTY".ilike.%${cleanSearchQuery}%`
     );
   }
-  if (sizeFilter && sizeFilter.trim()) query = query.eq('"SIZE (BASED ON STAFF NUMBER)"', sizeFilter.trim());
+  
+  // Add ATOL number search
+  if (atolQuery && atolQuery.trim()) {
+    const cleanAtolQuery = atolQuery.trim().replace(/[%_]/g, '\\$&'); // Escape special characters
+    query = query.ilike('"ATOL Number"', `%${cleanAtolQuery}%`);
+  }
+  if (sizeFilter && sizeFilter.trim()) {
+    const trimmedSize = sizeFilter.trim();
+    
+    // Handle new size ranges
+    if (trimmedSize === "Micro") {
+      // Micro: <10 staff
+      query = query.or('"SIZE (BASED ON STAFF NUMBER)".ilike.%micro%,' +
+                      '"SIZE (BASED ON STAFF NUMBER)".ilike.%1-9%,' +
+                      '"SIZE (BASED ON STAFF NUMBER)".ilike.%<10%');
+    } else if (trimmedSize === "Small") {
+      // Small: <50 staff
+      query = query.or('"SIZE (BASED ON STAFF NUMBER)".ilike.%small%,' +
+                      '"SIZE (BASED ON STAFF NUMBER)".ilike.%1-49%,' +
+                      '"SIZE (BASED ON STAFF NUMBER)".ilike.%<50%');
+    } else if (trimmedSize === "Medium") {
+      // Medium: 50-99 staff
+      query = query.or('"SIZE (BASED ON STAFF NUMBER)".ilike.%medium%,' +
+                      '"SIZE (BASED ON STAFF NUMBER)".ilike.%50-99%,' +
+                      '"SIZE (BASED ON STAFF NUMBER)".ilike.%50-99%');
+    } else if (trimmedSize === "Large") {
+      // Large: 100+ staff
+      query = query.or('"SIZE (BASED ON STAFF NUMBER)".ilike.%large%,' +
+                      '"SIZE (BASED ON STAFF NUMBER)".ilike.%100+%,' +
+                      '"SIZE (BASED ON STAFF NUMBER)".ilike.%>100%');
+    } else {
+      // Use exact match for existing size values
+      query = query.eq('"SIZE (BASED ON STAFF NUMBER)"', trimmedSize);
+    }
+  }
   if (countyFilter && countyFilter.trim()) query = query.eq('"Head Office COUNTY"', countyFilter.trim());
   if (sectorFilter && sectorFilter.trim()) query = query.eq("SECTOR", sectorFilter.trim());
   if (geoFilter && geoFilter.trim()) query = query.eq('"Geographic Specialisation"', geoFilter.trim());
@@ -134,22 +186,22 @@ export default async function Agencies({
     
     // If still error, show error page
     if (error) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="bg-red-50 border border-red-200 p-6 text-center">
-              <h2 className="text-lg font-semibold text-red-800 mb-2">Database Error</h2>
-              <p className="text-red-600">Unable to fetch agencies. Please try again later.</p>
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="bg-red-50 border border-red-200 p-6 text-center">
+            <h2 className="text-lg font-semibold text-red-800 mb-2">Database Error</h2>
+            <p className="text-red-600">Unable to fetch agencies. Please try again later.</p>
               <details className="mt-4 text-left">
                 <summary className="cursor-pointer text-sm text-red-700">Error Details</summary>
                 <pre className="mt-2 text-xs text-red-600 bg-red-100 p-2 rounded overflow-auto">
                   {JSON.stringify(error, null, 2)}
                 </pre>
               </details>
-            </div>
           </div>
         </div>
-      );
+      </div>
+    );
     }
   }
 
@@ -176,9 +228,9 @@ export default async function Agencies({
 
         {/* Company Info */}
         <div className="text-center mb-4">
-          <h3 className="font-semibold text-luxury-navy mb-2 line-clamp-2">
-            {agency["Company name"] || "N/A"}
-          </h3>
+                          <h3 className="text-xxl font-bold text-luxury-navy mb-2 leading-tight">
+                  {agency["Company name"] || "N/A"}
+                </h3>
           <div className="flex items-center justify-center gap-2 text-sm text-luxury-navy/70">
             <span>📍</span>
             <span>{agency["Head Office COUNTY"] || "N/A"}</span>
@@ -215,6 +267,15 @@ export default async function Agencies({
               <span className="text-luxury-navy ml-1 line-clamp-2">{agency["Address"] || "N/A"}</span>
             </div>
           </div>
+          {agency["ATOL Number"] && (
+            <div className="flex items-start gap-2 text-sm">
+              <span className="text-slate-400 mt-0.5">📋</span>
+              <div className="flex-1">
+                <span className="font-medium text-luxury-navy/70">ATOL:</span>
+                <span className="text-luxury-navy ml-1">{agency["ATOL Number"]}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -232,11 +293,11 @@ export default async function Agencies({
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-        {!hasFilter && <Hero />}
-        
-        {/* Floating Search Bar */}
-        <FloatingSearchBar searchQuery={searchQuery} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+      {!hasFilter && <Hero />}
+      
+      {/* Floating Search Bar */}
+        <FloatingSearchBar searchQuery={searchQuery} atolQuery={atolQuery} />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {hasFilter && (
@@ -250,7 +311,7 @@ export default async function Agencies({
         )}
 
         {/* 🔹 Enhanced Search Section with SearchBar Component */}
-        <div className="bg-white shadow-luxury border border-gray-100/50 p-8 mb-8">
+        <div id="search-section" className="bg-white shadow-luxury border border-gray-100/50 p-8 mb-8">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-luxury-navy">Search & Filter Agencies</h2>
           </div>
@@ -264,6 +325,15 @@ export default async function Agencies({
                   defaultValue={searchQuery}
                   placeholder="Search by company name, address, county..."
                   className="w-full px-6 py-4 text-lg bg-white border border-gray-200 text-charcoal placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-luxury-gold/20 focus:border-luxury-gold transition-all duration-300 rounded-l-md"
+                />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <input
+                  type="text"
+                  name="atol"
+                  defaultValue={atolQuery}
+                  placeholder="Search by ATOL number..."
+                  className="w-full px-6 py-4 text-lg bg-white border border-gray-200 text-charcoal placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-luxury-gold/20 focus:border-luxury-gold transition-all duration-300 rounded-md"
                 />
               </div>
               <div className="flex gap-3 flex-wrap lg:flex-nowrap">
@@ -290,9 +360,8 @@ export default async function Agencies({
                 defaultValue={sizeFilter}
                 className="border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-luxury-gold/20 focus:border-luxury-gold transition-colors bg-white"
               >
-                <option value="">All Sizes</option>
-                {uniqueSizes.map((size) => (
-                  <option key={size} value={size}>{size}</option>
+                {sizeFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
 
@@ -330,20 +399,11 @@ export default async function Agencies({
         </div>
 
         {/* Results Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-luxury-navy">UK Travel Agencies</h1>
-            <p className="text-luxury-navy/70 mt-1">
-              Showing {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, totalCount)} of {totalCount} agencies
-            </p>
-          </div>
-          <Link
-            href="/agencies/new"
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 font-medium transition-colors duration-200 shadow-luxury hover:shadow-luxury-hover transform hover:-translate-y-1"
-          >
-            + Add New Agency
-          </Link>
-        </div>
+        <AgenciesHeader 
+          page={page} 
+          pageSize={pageSize} 
+          totalCount={totalCount} 
+        />
 
         {/* Agencies Grid */}
         {agencies && agencies.length > 0 ? (
@@ -390,16 +450,16 @@ export default async function Agencies({
               
               {/* Previous Page */}
               {page > 1 ? (
-                <Link
-                  href={`/agencies?${new URLSearchParams({
-                    ...params,
-                    page: (page - 1).toString(),
-                  })}`}
+              <Link
+                href={`/agencies?${new URLSearchParams({
+                  ...params,
+                  page: (page - 1).toString(),
+                })}`}
                   className="px-3 py-2 text-sm font-medium text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold transition-all duration-200 flex items-center gap-1"
-                >
+              >
                   <span>←</span>
                   <span className="hidden sm:inline">Previous</span>
-                </Link>
+              </Link>
               ) : (
                 <span className="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed flex items-center gap-1">
                   <span>←</span>
@@ -423,30 +483,30 @@ export default async function Agencies({
                 if (pageNum < 1 || pageNum > totalPages) return null;
                 
                 return (
-                  <Link
-                    key={pageNum}
-                    href={`/agencies?${new URLSearchParams({
-                      ...params,
-                      page: pageNum.toString(),
-                    })}`}
+              <Link
+                key={pageNum}
+                href={`/agencies?${new URLSearchParams({
+                  ...params,
+                  page: pageNum.toString(),
+                })}`}
                     className={`px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                      pageNum === page
+                  pageNum === page
                         ? "text-white bg-luxury-gold border border-luxury-gold shadow-luxury"
                         : "text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold hover:shadow-sm"
-                    }`}
-                  >
-                    {pageNum}
-                  </Link>
+                }`}
+              >
+                {pageNum}
+              </Link>
                 );
               })}
-              
+            
               {/* Next Page */}
               {page < totalPages ? (
-                <Link
-                  href={`/agencies?${new URLSearchParams({
-                    ...params,
-                    page: (page + 1).toString(),
-                  })}`}
+              <Link
+                href={`/agencies?${new URLSearchParams({
+                  ...params,
+                  page: (page + 1).toString(),
+                })}`}
                   className="px-3 py-2 text-sm font-medium text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold transition-all duration-200 flex items-center gap-1"
                 >
                   <span className="hidden sm:inline">Next</span>
@@ -473,7 +533,7 @@ export default async function Agencies({
                     className="px-3 py-2 text-sm font-medium text-luxury-navy bg-white border border-gray-200 hover:bg-luxury-gold/5 hover:border-luxury-gold transition-all duration-200 rounded-r-lg"
                   >
                     {totalPages}
-                  </Link>
+              </Link>
                 </>
               )}
             </div>

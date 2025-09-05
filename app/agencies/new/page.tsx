@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import AdminRoute from "@/components/AdminRoute";
 
 export default function NewAgencyPage() {
   const supabase = createClient();
@@ -95,8 +96,9 @@ export default function NewAgencyPage() {
   };
 
   return (
-    <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Add New Agency</h1>
+    <AdminRoute>
+      <div className="p-6 max-w-lg mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Add New Agency</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -239,6 +241,7 @@ export default function NewAgencyPage() {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </AdminRoute>
   );
 }

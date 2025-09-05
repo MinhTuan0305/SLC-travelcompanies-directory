@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -64,8 +64,25 @@ export default function CompanyMap({ address }: CompanyMapProps) {
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [containerReady, setContainerReady] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Ensure component is mounted before rendering map
+  useEffect(() => {
+    setIsMounted(true);
+    
+    // Simple timeout to ensure container is ready
+    const timer = setTimeout(() => {
+      setContainerReady(true);
+    }, 150);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     async function fetchCoords() {
       if (!address) {
         setError("No address provided");
@@ -134,9 +151,9 @@ export default function CompanyMap({ address }: CompanyMapProps) {
     }
 
     fetchCoords();
-  }, [address]);
+  }, [address, isMounted]);
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <div className="flex items-center justify-center h-[400px] bg-gray-100 rounded-lg">
         <div className="text-center">
@@ -165,27 +182,36 @@ export default function CompanyMap({ address }: CompanyMapProps) {
 
   return (
     <div className="rounded-lg overflow-hidden border">
-      <MapContainer
-        center={[coords?.lat || 51.5074, coords?.lng || -0.1278]}
-        zoom={coords ? 15 : 5}
+      <div 
+        ref={containerRef}
         style={{ height: "400px", width: "100%" }}
-        className="z-0"
+        className="relative"
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        {coords && (
-          <Marker position={[coords.lat, coords.lng]} icon={customIcon}>
-            <Popup>
-              <div className="text-sm">
-                <strong>Location:</strong><br />
-                {address}
-              </div>
-            </Popup>
-          </Marker>
+        {containerReady && (
+          <MapContainer
+            center={[coords?.lat || 51.5074, coords?.lng || -0.1278]}
+            zoom={coords ? 15 : 5}
+            style={{ height: "100%", width: "100%" }}
+            className="z-0"
+            key={`map-${coords?.lat}-${coords?.lng}`}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            {coords && (
+              <Marker position={[coords.lat, coords.lng]} icon={customIcon}>
+                <Popup>
+                  <div className="text-sm">
+                    <strong>Location:</strong><br />
+                    {address}
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+          </MapContainer>
         )}
-      </MapContainer>
+      </div>
     </div>
   );
 }
